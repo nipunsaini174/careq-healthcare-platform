@@ -16,10 +16,12 @@ async function syncAuth() {
   for (const user of users) {
     console.log(`Syncing ${user.email} (${user.role})...`);
     
-    // We default all passwords to the one you were using in the demo
+    // We default all passwords to 123456789 (the standard demo password)
+    // because Supabase Auth hashes cannot be exported from the old project.
+    // In a true production environment, users would use a 'Forgot Password' flow.
     const { error } = await supabaseAdmin.auth.admin.createUser({
       email: user.email,
-      password: 'Zepic@121122#',
+      password: '123456789',
       email_confirm: true,
     });
     

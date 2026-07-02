@@ -45,7 +45,7 @@ export class ReceptionistService {
     // Use Supabase Admin to create the user directly to bypass email sending limits
     const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
       email,
-      password: password || 'Welcome123!', // Default password, they can reset it later
+      password: password || '123456789', // Default password, they can reset it later
       email_confirm: true,
       user_metadata: {
         role: 'RECEPTIONIST'

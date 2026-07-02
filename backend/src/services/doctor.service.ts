@@ -142,7 +142,7 @@ export class DoctorService {
     // Use Supabase Admin to create the doctor directly to bypass email sending limits
     const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
       email,
-      password: password || 'Welcome123!', // Use provided password or default
+      password: password || '123456789', // Use provided password or default
       email_confirm: true,
       user_metadata: {
         role: 'DOCTOR',
