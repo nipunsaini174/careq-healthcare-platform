@@ -332,8 +332,10 @@ export class PatientController {
 
       let targetPatient = patient;
       if (bookingType === 'other' && patientName) {
+        // Strip any appended relationship tag like " (uncle)" for the hospital view
+        const cleanName = patientName.replace(/\s*\([^)]*\)$/, '').trim();
         let dependent = await prisma.patients.findFirst({
-          where: { email: patient.email, full_name: patientName, user_id: null }
+          where: { email: patient.email, full_name: cleanName, user_id: null }
         });
         
         if (!dependent) {
@@ -341,7 +343,7 @@ export class PatientController {
             data: {
               hospital_id: patient.hospital_id,
               uhid: `UHID-${Date.now().toString().slice(-6)}`,
-              full_name: patientName,
+              full_name: cleanName,
               age: 0,
               gender: 'Not Specified',
               blood_group: 'Unknown',
