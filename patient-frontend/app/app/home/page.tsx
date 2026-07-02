@@ -33,6 +33,7 @@ import { useLayout } from "@/contexts/LayoutContext";
 import { LiveQueueTracker } from "@/components/ui/LiveQueueTracker";
 import { SmartSearchBar } from "@/components/ui/SmartSearchBar";
 import { patientApi } from "../../../services/api/patientApi";
+import { useProfile, useAppointments } from "../../../hooks/useAppData";
 
 export default function Home() {
   const router = useRouter();
@@ -59,80 +60,59 @@ export default function Home() {
   const [userState, setUserState] = useState<"loading" | "first-time" | "returning-empty" | "active">("loading");
   const [daysSinceLastVisit, setDaysSinceLastVisit] = useState<number | null>(null);
 
-  // Source of truth: the backend. The home page asks "what does the API say
-  // about this user's appointments?" and derives one of three states:
-  //   - first-time      → no appointment rows at all (brand-new account)
+  const { data: profile } = useProfile();
+  const { data: appointmentsList, isLoading: isAppointmentsLoading } = useAppointments();
+
+  // Source of truth: the backend (via React Query cache).
+  // The home page derives one of three states from the cached appointments:
+  //   - first-time      → no appointment rows at all
   //   - returning-empty → has past appointments but nothing Upcoming
   //   - active          → has at least one Upcoming appointment
-  // No localStorage involved — wiping local data will NOT lie about state.
   useEffect(() => {
-    let cancelled = false;
-    const loadAppointments = async () => {
-      try {
-        const list = await patientApi.getAppointments();
-        if (cancelled) return;
+    if (isAppointmentsLoading) {
+      setUserState("loading");
+      return;
+    }
 
-        setAllAppointments(list);
+    const list = appointmentsList || [];
+    setAllAppointments(list);
 
-        if (!list || list.length === 0) {
-          setUserState("first-time");
-          setUpcomingAppointments([]);
-          setNextAppointment(null);
-          return;
-        }
+    if (list.length === 0) {
+      setUserState("first-time");
+      setUpcomingAppointments([]);
+      setNextAppointment(null);
+      return;
+    }
 
-        const upcoming = list.filter((apt) => apt.status === "Upcoming");
-        setUpcomingAppointments(upcoming);
+    const upcoming = list.filter((apt) => apt.status === "Upcoming");
+    setUpcomingAppointments(upcoming);
 
-        if (upcoming.length > 0) {
-          // Soonest upcoming first.
-          const sorted = [...upcoming].sort(
-            (a, b) => new Date(a.isoDate).getTime() - new Date(b.isoDate).getTime()
-          );
-          setNextAppointment(sorted[0]);
-          setUserState("active");
-        } else {
-          setUserState("returning-empty");
-          const past = list
-            .filter((a) => a.status === "Completed" || a.status === "Cancelled")
-            .map((a) => new Date(a.isoDate).getTime())
-            .filter((t) => !isNaN(t));
-          if (past.length > 0) {
-            const mostRecent = Math.max(...past);
-            const days = Math.max(0, Math.floor((Date.now() - mostRecent) / 86400000));
-            setDaysSinceLastVisit(days);
-          }
-        }
-      } catch (e) {
-        // If the API call fails (e.g. user not yet logged in / token expired),
-        // assume first-time so we never block the UI on a broken request.
-        if (!cancelled) {
-          setUserState("first-time");
-          setAllAppointments([]);
-          setUpcomingAppointments([]);
-          setNextAppointment(null);
-        }
+    if (upcoming.length > 0) {
+      // Soonest upcoming first.
+      const sorted = [...upcoming].sort(
+        (a, b) => new Date(a.isoDate).getTime() - new Date(b.isoDate).getTime()
+      );
+      setNextAppointment(sorted[0]);
+      setUserState("active");
+    } else {
+      setUserState("returning-empty");
+      const past = list
+        .filter((a) => a.status === "Completed" || a.status === "Cancelled")
+        .map((a) => new Date(a.isoDate).getTime())
+        .filter((t) => !isNaN(t));
+      if (past.length > 0) {
+        const mostRecent = Math.max(...past);
+        const days = Math.max(0, Math.floor((Date.now() - mostRecent) / 86400000));
+        setDaysSinceLastVisit(days);
       }
-    };
-    loadAppointments();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+    }
+  }, [appointmentsList, isAppointmentsLoading]);
 
   useEffect(() => {
-    const fetchProfile = async () => {
-      try {
-        const patientData = await patientApi.getProfile();
-        if (patientData && patientData.full_name) {
-          setProfileName(patientData.full_name);
-        }
-      } catch (error) {
-        console.error("Failed to fetch profile", error);
-      }
-    };
-    fetchProfile();
-  }, []);
+    if (profile && profile.full_name) {
+      setProfileName(profile.full_name);
+    }
+  }, [profile]);
 
   // Build smart, context-aware suggestions. Returns up to 2 cards in priority order.
   // First-time users get NO suggestions (everything would be fake) — they see the

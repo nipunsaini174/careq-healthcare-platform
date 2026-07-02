@@ -22,6 +22,7 @@ import { SpecialtyFilterBar, ALL_SPECIALTIES, type SpecialtyChip } from "@/compo
 import { doctorApi, type ApiBookingDoctor, type ApiSpecialty } from "@/services/api/doctorApi";
 import { hospitalApi, type ApiHospital } from "@/services/api/hospitalApi";
 import { useDirectorySocket } from "@/services/socket/socket";
+import { useDoctors, useHospitals, useSpecialties } from "@/hooks/useAppData";
 
 // --- Types ---
 interface Hospital {
@@ -140,25 +141,13 @@ function BookAppointmentContent() {
   const [drawerViewMode, setDrawerViewMode] = useState<"hierarchy" | "flat">(viewMode);
   const [drawerFilterSector, setDrawerFilterSector] = useState<"all" | "government" | "private">(filterSector);
 
-  // Specialty chip-row source. The list of chips comes from the backend
-  // (`GET /api/doctors/specialties`) when reachable, falling back to a
-  // list derived from the currently-loaded doctor data so the row
-  // always works — even while offline or before login.
-  const [apiSpecialties, setApiSpecialties] = useState<ApiSpecialty[]>([]);
+  const { data: apiDoctors = [], isLoading: isLoadingDoctors, refetch: refetchDoctors } = useDoctors();
+  const { data: apiHospitals = [], isLoading: isLoadingHospitals, refetch: refetchHospitals } = useHospitals();
+  const { data: apiSpecialties = [], refetch: refetchSpecialties } = useSpecialties();
 
-  // Hospitals list fetched from the backend (`GET /api/hospitals`). The
-  // patient app uses this for both the "choose a hospital" cards and as
-  // a lookup table for the flat-doctor view's sector filter. Loading
-  // starts true so we render skeletons instead of a flash of "empty".
-  const [hospitals, setHospitals] = useState<Hospital[]>([]);
-  const [isLoadingHospitals, setIsLoadingHospitals] = useState(true);
-
-  // Doctors list fetched from the backend (`GET /api/doctors`) and
-  // kept in sync over websockets — `doctor_created`, `doctor_updated`,
-  // `doctor_deleted` events arrive in realtime as the receptionist
-  // mutates the directory in the hospital app.
-  const [doctors, setDoctors] = useState<Doctor[]>([]);
-  const [isLoadingDoctors, setIsLoadingDoctors] = useState(true);
+  // The mapped data
+  const doctors = useMemo(() => apiDoctors.map(mapApiDoctor), [apiDoctors]);
+  const hospitals = useMemo(() => apiHospitals.map(mapApiHospital), [apiHospitals]);
 
   // Reset transient UI when the user navigates between hierarchy
   // steps or modes. Without this, the search box text and an open
@@ -177,98 +166,21 @@ function BookAppointmentContent() {
     }
   }, [isDrawerOpen, viewMode, filterSector]);
 
-  // Load specialties from the backend once on mount. This is best-effort:
-  // if the API is unreachable (no auth, server down) we silently fall back
-  // to the derived list. Cached at component level — no need to re-fetch.
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      const list = await doctorApi.getSpecialties();
-      if (!cancelled) setApiSpecialties(list);
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  // Load hospitals from the backend on mount. /api/hospitals is public,
-  // so this works even before the patient has logged in. The map step
-  // normalizes the payload into the existing Hospital shape so the
-  // downstream rendering code stays untouched.
-  //
-  // We expose a refetcher rather than inlining the call so socket
-  // events (department_created/deleted) can ask for a fresh list
-  // without duplicating the loading-state plumbing.
-  const refreshHospitals = useCallback(async () => {
-    setIsLoadingHospitals(true);
-    try {
-      const list = await hospitalApi.getAll();
-      setHospitals(list.map(mapApiHospital));
-    } finally {
-      setIsLoadingHospitals(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    refreshHospitals();
-  }, [refreshHospitals]);
-
-  // Load doctors from the backend on mount. The list mirrors what the
-  // hospital app shows — every doctor mutation (add / status update /
-  // delete) is also broadcast over websockets, so we wire those events
-  // below to keep the UI live.
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      setIsLoadingDoctors(true);
-      try {
-        const list = await doctorApi.getBookingDoctors();
-        if (!cancelled) setDoctors(list.map(mapApiDoctor));
-      } finally {
-        if (!cancelled) setIsLoadingDoctors(false);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
   // Realtime channel — single subscription that keeps the doctor
   // directory and the hospital→department map in sync as the hospital
-  // app mutates them. Handlers are stable closures around the latest
-  // refs via the hook implementation, so we can pass inline callbacks.
+  // app mutates them. By calling refetch(), we automatically update
+  // the React Query cache which flows down into our useMemo mappings.
   useDirectorySocket({
-    onDoctorCreated: (doc) => {
-      setDoctors((prev) => {
-        if (prev.some((d) => d.id === doc.id)) return prev;
-        return [...prev, mapApiDoctor(doc)];
-      });
-    },
-    onDoctorUpdated: (doc) => {
-      setDoctors((prev) => {
-        const mapped = mapApiDoctor(doc);
-        const idx = prev.findIndex((d) => d.id === doc.id);
-        if (idx === -1) return [...prev, mapped];
-        const next = prev.slice();
-        next[idx] = mapped;
-        return next;
-      });
-    },
-    onDoctorDeleted: ({ id }) => {
-      setDoctors((prev) => prev.filter((d) => d.id !== id));
-    },
-    // The patient's hospital list embeds a `departments[]` array per
-    // hospital, so when admins add/remove departments we re-fetch the
-    // list rather than try to surgically mutate every nested array.
+    onDoctorCreated: () => { refetchDoctors(); },
+    onDoctorUpdated: () => { refetchDoctors(); },
+    onDoctorDeleted: () => { refetchDoctors(); },
     onDepartmentCreated: () => {
-      refreshHospitals();
-      // Refresh specialty chip counts too so the new dept appears
-      // there immediately even if no doctor is assigned yet.
-      doctorApi.getSpecialties().then(setApiSpecialties).catch(() => {});
+      refetchHospitals();
+      refetchSpecialties();
     },
     onDepartmentDeleted: () => {
-      refreshHospitals();
-      doctorApi.getSpecialties().then(setApiSpecialties).catch(() => {});
+      refetchHospitals();
+      refetchSpecialties();
     },
   });
 

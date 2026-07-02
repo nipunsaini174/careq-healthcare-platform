@@ -5,6 +5,7 @@ export interface Doctor {
   qualification: string;
   experience: number;
   patients: number;
+  currentPatient?: string;
   delay: number;
   status: "Active" | "Busy" | "Offline";
   rating: number;

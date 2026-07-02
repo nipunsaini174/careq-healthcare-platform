@@ -1,0 +1,451 @@
+{
+  "hospitals": [
+    {
+      "hospital_id": "1",
+      "hospital_name": "APEX CITY HOSPITAL",
+      "registration_no": "MCI-001",
+      "branch_name": "Main Branch",
+      "address": "Demo City, India",
+      "phone": "+91-9111122233",
+      "email": "contact@gmail.com",
+      "working_hours": "Mon-Sat 09:00-18:00",
+      "created_at": "2026-06-29T10:33:13.927Z"
+    }
+  ],
+  "users": [
+    {
+      "user_id": "2",
+      "hospital_id": "1",
+      "full_name": "mani",
+      "email": "mani@gmail.com",
+      "password_hash": "SUPABASE_AUTH_DELEGATED",
+      "role": "patient",
+      "status": "active",
+      "last_login": "2026-06-29T10:45:37.312Z"
+    },
+    {
+      "user_id": "6",
+      "hospital_id": "1",
+      "full_name": "Dr. Aradhna",
+      "email": "Aradhna12@gmail.com",
+      "password_hash": "SUPABASE_AUTH_DELEGATED",
+      "role": "DOCTOR",
+      "status": "active",
+      "last_login": null
+    },
+    {
+      "user_id": "7",
+      "hospital_id": "1",
+      "full_name": "nipun",
+      "email": "nipun@gmail.com",
+      "password_hash": "SUPABASE_AUTH_DELEGATED",
+      "role": "patient",
+      "status": "active",
+      "last_login": "2026-06-30T06:26:09.826Z"
+    },
+    {
+      "user_id": "8",
+      "hospital_id": "1",
+      "full_name": "Shreyanshi",
+      "email": "shreya@gmail.com",
+      "password_hash": "SUPABASE_AUTH_DELEGATED",
+      "role": "DOCTOR",
+      "status": "active",
+      "last_login": null
+    },
+    {
+      "user_id": "9",
+      "hospital_id": "1",
+      "full_name": "Manpreet",
+      "email": "man@gmail.com",
+      "password_hash": "SUPABASE_AUTH_DELEGATED",
+      "role": "DOCTOR",
+      "status": "active",
+      "last_login": null
+    },
+    {
+      "user_id": "1",
+      "hospital_id": "1",
+      "full_name": "admin1",
+      "email": "admin@gmail.com",
+      "password_hash": "SUPABASE_AUTH_DELEGATED",
+      "role": "admin",
+      "status": "active",
+      "last_login": "2026-07-02T04:58:23.190Z"
+    },
+    {
+      "user_id": "4",
+      "hospital_id": "1",
+      "full_name": "Dhruv",
+      "email": "dhruvraj487@gmail.com",
+      "password_hash": "SUPABASE_AUTH_DELEGATED",
+      "role": "patient",
+      "status": "active",
+      "last_login": "2026-07-02T04:58:30.902Z"
+    },
+    {
+      "user_id": "5",
+      "hospital_id": "1",
+      "full_name": "Tenma",
+      "email": "recept@gmail.com",
+      "password_hash": "SUPABASE_AUTH_DELEGATED",
+      "role": "RECEPTIONIST",
+      "status": "active",
+      "last_login": "2026-07-02T04:59:40.018Z"
+    },
+    {
+      "user_id": "10",
+      "hospital_id": "1",
+      "full_name": "Paras kaushik",
+      "email": "kaushikparas495@gamil.com",
+      "password_hash": "SUPABASE_AUTH_DELEGATED",
+      "role": "patient",
+      "status": "active",
+      "last_login": null
+    }
+  ],
+  "departments": [
+    {
+      "department_id": "1",
+      "hospital_id": "1",
+      "department_name": "Cardiology",
+      "location": "Main Block",
+      "daily_capacity": 50,
+      "created_at": "2026-06-29T11:09:25.891Z"
+    },
+    {
+      "department_id": "3",
+      "hospital_id": "1",
+      "department_name": "neurology",
+      "location": "Main Block",
+      "daily_capacity": 50,
+      "created_at": "2026-06-29T11:13:59.235Z"
+    },
+    {
+      "department_id": "5",
+      "hospital_id": "1",
+      "department_name": "Orthopedics",
+      "location": "Main Building",
+      "daily_capacity": 50,
+      "created_at": "2026-06-30T07:50:52.051Z"
+    }
+  ],
+  "admins": [
+    {
+      "admin_id": "1",
+      "user_id": "1",
+      "hospital_id": "1",
+      "admin_level": "admin",
+      "permissions": {
+        "manage_users": true,
+        "view_reports": true,
+        "manage_billing": true,
+        "manage_doctors": true
+      }
+    }
+  ],
+  "receptionists": [
+    {
+      "receptionist_id": "1",
+      "user_id": "5",
+      "hospital_id": "1",
+      "shift_start": "1970-01-01T13:30:00.000Z",
+      "shift_end": "1970-01-01T09:30:00.000Z",
+      "status": "Offline"
+    }
+  ],
+  "doctors": [
+    {
+      "doctor_id": "1",
+      "user_id": "6",
+      "hospital_id": "1",
+      "department_id": "3",
+      "specialization": "neurology",
+      "qualification": "MCh ",
+      "experience_years": 12,
+      "rating": "5",
+      "availability_status": "Offline",
+      "phone": "91876890379",
+      "opd": "OPD-1",
+      "schedule": "Mon–Fri 09:00–17:00",
+      "bio": "expert nero doctor",
+      "focus": "neuro surgeon",
+      "credentials": null,
+      "room": null,
+      "awards": ""
+    },
+    {
+      "doctor_id": "2",
+      "user_id": "8",
+      "hospital_id": "1",
+      "department_id": "1",
+      "specialization": "Cardiology",
+      "qualification": "Btech",
+      "experience_years": 20,
+      "rating": "5",
+      "availability_status": "Offline",
+      "phone": "5454545454",
+      "opd": "OPD-1",
+      "schedule": "Mon–Fri 09:00–17:00",
+      "bio": "Logic developer",
+      "focus": "Chandigarh university",
+      "credentials": null,
+      "room": null,
+      "awards": "Ai nexus"
+    },
+    {
+      "doctor_id": "3",
+      "user_id": "9",
+      "hospital_id": "1",
+      "department_id": "5",
+      "specialization": "Orthopedics",
+      "qualification": "Bsc Physics",
+      "experience_years": 5,
+      "rating": "5",
+      "availability_status": "Offline",
+      "phone": "9090909090",
+      "opd": "OPD-1",
+      "schedule": "Mon–Fri 09:00–17:00",
+      "bio": "Hello Bro",
+      "focus": "Fishing",
+      "credentials": null,
+      "room": null,
+      "awards": "AI Nexus"
+    }
+  ],
+  "patients": [
+    {
+      "patient_id": "5",
+      "hospital_id": "1",
+      "primary_doctor_id": null,
+      "uhid": "UHID-941625",
+      "full_name": "mani",
+      "age": 0,
+      "gender": "Not Specified",
+      "blood_group": "Unknown",
+      "billing_status": "Unpaid",
+      "patient_status": "Active",
+      "abha_id": null,
+      "dob": null,
+      "email": "mani@gmail.com",
+      "phone": null,
+      "user_id": "2",
+      "parent_id": null
+    },
+    {
+      "patient_id": "6",
+      "hospital_id": "1",
+      "primary_doctor_id": null,
+      "uhid": "UHID-821076",
+      "full_name": "Dhruv",
+      "age": 0,
+      "gender": "Not Specified",
+      "blood_group": "Unknown",
+      "billing_status": "Unpaid",
+      "patient_status": "Active",
+      "abha_id": null,
+      "dob": null,
+      "email": "dhruvraj487@gmail.com",
+      "phone": null,
+      "user_id": "4",
+      "parent_id": null
+    },
+    {
+      "patient_id": "7",
+      "hospital_id": "1",
+      "primary_doctor_id": null,
+      "uhid": "UHID-725937",
+      "full_name": "nipun",
+      "age": 0,
+      "gender": "Male",
+      "blood_group": "Unknown",
+      "billing_status": "Unpaid",
+      "patient_status": "Active",
+      "abha_id": "049385760295867",
+      "dob": "2009-07-15T00:00:00.000Z",
+      "email": "nipun@gmail.com",
+      "phone": "647678999",
+      "user_id": "7",
+      "parent_id": null
+    },
+    {
+      "patient_id": "8",
+      "hospital_id": "1",
+      "primary_doctor_id": null,
+      "uhid": "UHID-092564",
+      "full_name": "Paras kaushik",
+      "age": 0,
+      "gender": "Male",
+      "blood_group": "Unknown",
+      "billing_status": "Unpaid",
+      "patient_status": "Active",
+      "abha_id": null,
+      "dob": "2007-01-01T00:00:00.000Z",
+      "email": "kaushikparas495@gamil.com",
+      "phone": "9056681167",
+      "user_id": "10",
+      "parent_id": null
+    }
+  ],
+  "patient_profiles": [],
+  "appointments": [
+    {
+      "appointment_id": "1",
+      "patient_id": "7",
+      "doctor_id": "1",
+      "hospital_id": "1",
+      "appointment_date": "2026-07-01T05:00:00.000Z",
+      "appointment_type": "self",
+      "appointment_status": "Upcoming",
+      "created_at": "2026-06-30T06:47:23.947Z"
+    },
+    {
+      "appointment_id": "2",
+      "patient_id": "7",
+      "doctor_id": "2",
+      "hospital_id": "1",
+      "appointment_date": "2026-07-01T05:00:00.000Z",
+      "appointment_type": "other: Aarav Kumar",
+      "appointment_status": "Upcoming",
+      "created_at": "2026-06-30T07:50:50.507Z"
+    },
+    {
+      "appointment_id": "5",
+      "patient_id": "6",
+      "doctor_id": "1",
+      "hospital_id": "1",
+      "appointment_date": "2026-07-02T05:00:00.000Z",
+      "appointment_type": "other: Tejash",
+      "appointment_status": "Cancelled",
+      "created_at": "2026-07-01T11:31:40.714Z"
+    },
+    {
+      "appointment_id": "3",
+      "patient_id": "6",
+      "doctor_id": "1",
+      "hospital_id": "1",
+      "appointment_date": "2026-07-02T05:00:00.000Z",
+      "appointment_type": "other: Jane Doe",
+      "appointment_status": "Cancelled",
+      "created_at": "2026-07-01T09:56:19.395Z"
+    },
+    {
+      "appointment_id": "4",
+      "patient_id": "6",
+      "doctor_id": "3",
+      "hospital_id": "1",
+      "appointment_date": "2026-07-02T05:00:00.000Z",
+      "appointment_type": "self",
+      "appointment_status": "Cancelled",
+      "created_at": "2026-07-01T10:09:28.605Z"
+    },
+    {
+      "appointment_id": "6",
+      "patient_id": "6",
+      "doctor_id": "2",
+      "hospital_id": "1",
+      "appointment_date": "2026-07-02T05:00:00.000Z",
+      "appointment_type": "other: Tejash",
+      "appointment_status": "Upcoming",
+      "created_at": "2026-07-01T11:42:57.579Z"
+    }
+  ],
+  "queue_tokens": [
+    {
+      "token_id": "1",
+      "patient_id": "7",
+      "doctor_id": "1",
+      "hospital_id": "1",
+      "appointment_id": "1",
+      "walkin_id": null,
+      "token_code": "T1",
+      "token_type": "OPD",
+      "queue_position": 1,
+      "priority_score": 0,
+      "token_status": "Completed",
+      "check_in_time": "2026-07-01T05:00:00.000Z",
+      "estimated_wait_time": 10
+    },
+    {
+      "token_id": "5",
+      "patient_id": "6",
+      "doctor_id": "1",
+      "hospital_id": "1",
+      "appointment_id": "5",
+      "walkin_id": null,
+      "token_code": "T5",
+      "token_type": "OPD",
+      "queue_position": 2,
+      "priority_score": 0,
+      "token_status": "Cancelled",
+      "check_in_time": "2026-07-02T05:00:00.000Z",
+      "estimated_wait_time": 20
+    },
+    {
+      "token_id": "3",
+      "patient_id": "6",
+      "doctor_id": "1",
+      "hospital_id": "1",
+      "appointment_id": "3",
+      "walkin_id": null,
+      "token_code": "T3",
+      "token_type": "OPD",
+      "queue_position": 2,
+      "priority_score": 0,
+      "token_status": "Cancelled",
+      "check_in_time": "2026-07-02T05:00:00.000Z",
+      "estimated_wait_time": 20
+    },
+    {
+      "token_id": "4",
+      "patient_id": "6",
+      "doctor_id": "3",
+      "hospital_id": "1",
+      "appointment_id": "4",
+      "walkin_id": null,
+      "token_code": "T4",
+      "token_type": "OPD",
+      "queue_position": 1,
+      "priority_score": 0,
+      "token_status": "Cancelled",
+      "check_in_time": "2026-07-02T05:00:00.000Z",
+      "estimated_wait_time": 10
+    },
+    {
+      "token_id": "6",
+      "patient_id": "6",
+      "doctor_id": "2",
+      "hospital_id": "1",
+      "appointment_id": "6",
+      "walkin_id": null,
+      "token_code": "T6",
+      "token_type": "OPD",
+      "queue_position": 2,
+      "priority_score": 0,
+      "token_status": "Scheduled",
+      "check_in_time": "2026-07-02T05:00:00.000Z",
+      "estimated_wait_time": 20
+    },
+    {
+      "token_id": "2",
+      "patient_id": "7",
+      "doctor_id": "2",
+      "hospital_id": "1",
+      "appointment_id": "2",
+      "walkin_id": null,
+      "token_code": "T2",
+      "token_type": "OPD",
+      "queue_position": 1,
+      "priority_score": 0,
+      "token_status": "Waiting",
+      "check_in_time": "2026-07-01T05:00:00.000Z",
+      "estimated_wait_time": 10
+    }
+  ],
+  "consultations": [],
+  "follow_up_consultations": [],
+  "billing_invoices": [],
+  "lab_reports": [],
+  "notifications": [],
+  "walk_in_patients": []
+}

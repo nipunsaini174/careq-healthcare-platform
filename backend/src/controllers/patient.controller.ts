@@ -160,31 +160,36 @@ export class PatientController {
         return res.status(200).json({ data: [] });
       }
 
+      // Find all patient rows associated with this account (by email)
+      const familyPatients = await prisma.patients.findMany({
+        where: { email: patient.email }
+      });
+      const familyPatientIds = familyPatients.map(p => p.patient_id);
+
       const appointments = await prisma.appointments.findMany({
-        where: { patient_id: patient.patient_id },
+        where: { patient_id: { in: familyPatientIds } },
         include: {
           doctors: {
             include: {
               departments: true,
               users: true,
             }
-          }
+          },
+          patients: true
         },
         orderBy: { appointment_date: 'desc' }
       });
 
-      const formatted = appointments.map((a) => {
-        // appointment_type field stores either 'self' or 'other: <name>'.
-        // Parse it back into bookingType + patientName so the UI keeps working.
-        let bookingType: 'self' | 'other' = 'self';
-        let patientName = patient.full_name;
-        let relationship = 'Self';
-        let personId = 'self';
+      const formatted = appointments.map((a: any) => {
+        let patientName = a.patients?.full_name || patient.full_name;
+        let bookingType: 'self' | 'other' = a.patient_id === patient.patient_id ? 'self' : 'other';
+        let relationship = bookingType === 'self' ? 'Self' : 'Other';
+        let personId = bookingType === 'self' ? 'self' : '';
 
+        // Backwards compatibility for old records stored as "other: Name"
         if (typeof a.appointment_type === 'string' && a.appointment_type.startsWith('other:')) {
           bookingType = 'other';
           patientName = a.appointment_type.replace(/^other:\s*/, '').trim() || patientName;
-          // Front-end "people" data lives in localStorage; relationship is best-effort.
           relationship = 'Other';
           personId = '';
         }
@@ -325,6 +330,31 @@ export class PatientController {
         return res.status(404).json({ error: 'Patient profile not found' });
       }
 
+      let targetPatient = patient;
+      if (bookingType === 'other' && patientName) {
+        let dependent = await prisma.patients.findFirst({
+          where: { email: patient.email, full_name: patientName, user_id: null }
+        });
+        
+        if (!dependent) {
+          dependent = await prisma.patients.create({
+            data: {
+              hospital_id: patient.hospital_id,
+              uhid: `UHID-${Date.now().toString().slice(-6)}`,
+              full_name: patientName,
+              age: 0,
+              gender: 'Not Specified',
+              blood_group: 'Unknown',
+              billing_status: 'Unpaid',
+              patient_status: 'Active',
+              email: patient.email,
+              phone: patient.phone,
+            }
+          });
+        }
+        targetPatient = dependent;
+      }
+
       // Default to tomorrow 10:30 AM. Once the booking UI lets the
       // user pick a slot, the body should carry an ISO date and this
       // becomes the fallback.
@@ -368,9 +398,9 @@ export class PatientController {
       const [newAppointment, newToken] = await prisma.$transaction(async (tx) => {
         const appt = await tx.appointments.create({
           data: {
-            patient_id: patient.patient_id,
+            patient_id: targetPatient.patient_id,
             doctor_id: doctor.doctor_id,
-            hospital_id: patient.hospital_id,
+            hospital_id: targetPatient.hospital_id,
             appointment_date: appointmentDate,
             appointment_type: apptType,
             appointment_status: 'Upcoming',
@@ -379,9 +409,9 @@ export class PatientController {
 
         const tok = await tx.queue_tokens.create({
           data: {
-            patient_id: patient.patient_id,
+            patient_id: targetPatient.patient_id,
             doctor_id: doctor.doctor_id,
-            hospital_id: patient.hospital_id,
+            hospital_id: targetPatient.hospital_id,
             appointment_id: appt.appointment_id,
             token_code: `T${appt.appointment_id.toString()}`,
             token_type: 'OPD',
@@ -398,7 +428,7 @@ export class PatientController {
 
       const eventPayload = buildAppointmentEventPayload({
         appointment: newAppointment,
-        patient: { patient_id: patient.patient_id, full_name: patient.full_name },
+        patient: { patient_id: targetPatient.patient_id, full_name: targetPatient.full_name },
         doctor: {
           doctor_id: doctor.doctor_id,
           full_name: doctor.users?.full_name ?? 'Doctor',

@@ -1,10 +1,16 @@
 import axios from "axios";
 import { getCookie } from "cookies-next";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5000/api";
+const getBaseUrl = () => {
+  if (process.env.NEXT_PUBLIC_API_URL) return process.env.NEXT_PUBLIC_API_URL;
+  if (typeof window !== "undefined") {
+    return `http://${window.location.hostname}:5000/api`;
+  }
+  return "http://localhost:5000/api";
+};
 
 export const axiosInstance = axios.create({
-  baseURL: API_URL,
+  baseURL: getBaseUrl(),
   timeout: 10000, // 10 s hard limit — prevents requests hanging forever on slow networks
   headers: {
     "Content-Type": "application/json",
@@ -47,7 +53,7 @@ axiosInstance.interceptors.response.use(
           if (!refreshToken) throw new Error("No refresh token");
 
           _refreshPromise = axios
-            .post(`${API_URL}/auth/refresh`, { refreshToken })
+            .post(`${getBaseUrl()}/auth/refresh`, { refreshToken })
             .then((res) => {
               const token = res.data.data.accessToken;
               localStorage.setItem("healthflow-access-token", token);

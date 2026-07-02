@@ -10,6 +10,10 @@ import { safeEmit } from '../sockets/emit.js';
  * source sees identical fields.
  */
 function mapDoctorRow(doc: any) {
+  // If consultations were joined, compute real live stats
+  const currentConsultation = doc.consultations?.find((c: any) => c.consultation_status === 'In Progress');
+  const completedToday = doc.consultations?.filter((c: any) => c.consultation_status === 'Completed').length || 0;
+
   return {
     id: String(doc.doctor_id),
     name: doc.users?.full_name ?? '',
@@ -30,6 +34,8 @@ function mapDoctorRow(doc: any) {
     delay: 0,
     education: [] as string[],
     publications: [] as string[],
+    currentPatient: currentConsultation?.patients?.full_name || '—',
+    patients: completedToday,
   };
 }
 
@@ -37,10 +43,21 @@ export type DoctorDto = ReturnType<typeof mapDoctorRow>;
 
 export class DoctorService {
   async getAllDoctors() {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
     const doctors = await prisma.doctors.findMany({
       include: {
         users: true,
         departments: true,
+        consultations: {
+          where: {
+            start_time: { gte: today },
+          },
+          include: {
+            patients: true,
+          }
+        }
       },
     });
     return doctors.map(mapDoctorRow);

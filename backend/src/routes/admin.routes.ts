@@ -1,7 +1,10 @@
 import { Router } from 'express';
 import { adminController } from '../controllers/admin.controller.js';
+import { authMiddleware } from '../middleware/auth.middleware.js';
 
 const router = Router();
+
+router.use(authMiddleware);
 
 router.get('/receptionists', adminController.getAllReceptionists);
 router.post('/receptionists', adminController.createReceptionist);

@@ -52,7 +52,7 @@ export default function DashboardPage() {
   const [activePatient, setActivePatient] = useState<Patient | null>(null);
 
   // App UI State
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'queue' | 'patients' | 'profile'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'queue' | 'patients' | 'reports' | 'profile'>('dashboard');
   const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(false);
   const [loadingActivePatient, setLoadingActivePatient] = useState<boolean>(false);
 

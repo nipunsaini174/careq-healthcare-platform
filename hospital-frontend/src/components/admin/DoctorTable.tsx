@@ -58,16 +58,7 @@ export function DoctorTable() {
     };
   }, [socket]);
 
-  // Map doctors to match their current patient from seeded records or general default
-  const getMockPatient = (docName: string) => {
-    if (docName.includes("Sharma")) return "Amir Khan";
-    if (docName.includes("Mehta")) return "Sarah Lin";
-    if (docName.includes("Patel")) return "James Park";
-    if (docName.includes("Nair")) return "Emma Cho";
-    if (docName.includes("Gupta")) return "Peter Liu";
-    if (docName.includes("Iyer")) return "Nina Torres";
-    return "—";
-  };
+
 
   return (
     <section>
@@ -97,7 +88,7 @@ export function DoctorTable() {
           <tbody>
             {doctors.map((doc, i) => {
               const sc = statusConfig[doc.status] || statusConfig.Offline;
-              const currentPatient = doc.status === "Offline" ? "—" : getMockPatient(doc.name);
+              const currentPatient = doc.status === "Offline" ? "—" : (doc.currentPatient || "—");
               
               return (
                 <motion.tr
@@ -138,7 +129,7 @@ export function DoctorTable() {
                       className="px-2.5 py-1 rounded-lg"
                       style={{ background: "#EEF9F5", color: "#3AB58F", fontSize: "13px", fontWeight: 700 }}
                     >
-                      {doc.patients}
+                      {doc.patients || 0}
                     </span>
                   </td>
                   {/* Delay */}
