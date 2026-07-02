@@ -17,6 +17,7 @@ function BookingDetailsContent() {
   const doctorName = searchParams.get("doctorName");
   const department = searchParams.get("department");
   const hospitalId = searchParams.get("hospitalId");
+  const hospitalName = searchParams.get("hospitalName");
 
   const { people } = usePeople();
   const self = people.find((p) => p.isSelf);
@@ -93,12 +94,18 @@ function BookingDetailsContent() {
       query.set("appointmentId", `APT-${newApt.appointment_id}`);
       query.set("doctorName", doctorName || "");
       query.set("department", department || "");
+      query.set("hospitalName", hospitalName || "");
       query.set("bookingType", bookingType);
+      
+      if (newApt.appointment_date) {
+        query.set("appointmentDate", newApt.appointment_date);
+      }
+      
       if (bookingType === "other" && person) {
         query.set("patientName", person.name);
         query.set("patientAge", person.age || "");
         query.set("patientGender", person.gender || "");
-        query.set("relationship", person.relationship);
+        query.set("relationship", person.relationship || "");
       }
 
       router.push(`/app/appointment-confirmation?${query.toString()}`);

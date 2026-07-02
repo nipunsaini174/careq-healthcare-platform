@@ -608,6 +608,7 @@ function BookAppointmentContent() {
                                     doctorName: doctor.name,
                                     department: doctor.department,
                                     hospitalId: String(doctor.hospitalId),
+                                    hospitalName: docHospital?.name || "",
                                   });
                                   router.push(`/app/booking-details?${params.toString()}`);
                                 }}

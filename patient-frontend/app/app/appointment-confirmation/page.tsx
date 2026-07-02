@@ -23,14 +23,29 @@ function AppointmentConfirmationContent() {
   const bookingType = searchParams.get("bookingType") || "self";
   const appointmentId = searchParams.get("appointmentId") || "APT-2024-6789";
   
+  const hospitalName = searchParams.get("hospitalName") || "City General Hospital";
+  
   // For "other" booking type
   const patientName = searchParams.get("patientName") || "John Doe";
   const patientAge = searchParams.get("patientAge") || "35";
   const patientGender = searchParams.get("patientGender") || "Male";
   const relationship = searchParams.get("relationship") || "Self";
 
-  const displayPatientName = bookingType === "self" ? "John Doe" : patientName;
+  const displayPatientName = bookingType === "self" ? "You" : patientName;
   const displayRelationship = bookingType === "self" ? "Self" : relationship;
+
+  const rawDate = searchParams.get("appointmentDate");
+  let displayDate = "Tomorrow, June 17, 2026";
+  let displayTime = "10:30 AM - 11:00 AM";
+
+  if (rawDate) {
+    const d = new Date(rawDate);
+    displayDate = d.toLocaleDateString("en-US", { weekday: 'long', month: 'short', day: 'numeric', year: 'numeric' });
+    const startTime = d.toLocaleTimeString("en-US", { hour: 'numeric', minute: '2-digit', hour12: true });
+    d.setMinutes(d.getMinutes() + 30); // 30-min slot
+    const endTime = d.toLocaleTimeString("en-US", { hour: 'numeric', minute: '2-digit', hour12: true });
+    displayTime = `${startTime} - ${endTime}`;
+  }
 
   return (
     <div className="min-h-full bg-gray-50 dark:bg-[#0B0F14] flex flex-col pb-6">
@@ -72,7 +87,7 @@ function AppointmentConfirmationContent() {
             <div>
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-1">{doctorName}</h3>
               <p className="text-sm text-gray-600 dark:text-[#CBD5E1]">{department}</p>
-              <p className="text-xs text-gray-500 dark:text-[#94A3B8] mt-1">City General Hospital</p>
+              <p className="text-xs text-gray-500 dark:text-[#94A3B8] mt-1">{hospitalName}</p>
             </div>
           </div>
 
@@ -84,7 +99,7 @@ function AppointmentConfirmationContent() {
               </div>
               <div>
                 <p className="text-xs text-gray-500 dark:text-[#94A3B8]">Date</p>
-                <p className="text-gray-900 dark:text-white font-medium">Tomorrow, June 17, 2026</p>
+                <p className="text-gray-900 dark:text-white font-medium">{displayDate}</p>
               </div>
             </div>
 
@@ -94,7 +109,7 @@ function AppointmentConfirmationContent() {
               </div>
               <div>
                 <p className="text-xs text-gray-500 dark:text-[#94A3B8]">Time</p>
-                <p className="text-gray-900 dark:text-white font-medium">10:30 AM - 11:00 AM</p>
+                <p className="text-gray-900 dark:text-white font-medium">{displayTime}</p>
               </div>
             </div>
 
@@ -104,7 +119,7 @@ function AppointmentConfirmationContent() {
               </div>
               <div>
                 <p className="text-xs text-gray-500 dark:text-[#94A3B8]">Location</p>
-                <p className="text-gray-900 dark:text-white font-medium">City General Hospital, Ward 3A</p>
+                <p className="text-gray-900 dark:text-white font-medium">{hospitalName}, OPD Wing</p>
               </div>
             </div>
 
