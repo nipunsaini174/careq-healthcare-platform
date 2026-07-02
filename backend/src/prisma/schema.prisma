@@ -1,0 +1,315 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model admins {
+  admin_id    BigInt    @id @default(autoincrement())
+  user_id     BigInt    @unique
+  hospital_id BigInt
+  admin_level String    @db.VarChar
+  permissions Json
+  hospitals   hospitals @relation(fields: [hospital_id], references: [hospital_id])
+  users       users     @relation(fields: [user_id], references: [user_id])
+}
+
+model appointments {
+  appointment_id          BigInt                   @id @default(autoincrement())
+  patient_id              BigInt
+  doctor_id               BigInt
+  hospital_id             BigInt
+  appointment_date        DateTime
+  appointment_type        String                   @db.VarChar
+  appointment_status      String                   @db.VarChar
+  created_at              DateTime                 @default(now())
+  doctors                 doctors                  @relation(fields: [doctor_id], references: [doctor_id])
+  hospitals               hospitals                @relation(fields: [hospital_id], references: [hospital_id])
+  patients                patients                 @relation(fields: [patient_id], references: [patient_id])
+  follow_up_consultations follow_up_consultations?
+  queue_tokens            queue_tokens?
+}
+
+model billing_invoices {
+  invoice_id      BigInt        @id @default(autoincrement())
+  patient_id      BigInt
+  hospital_id     BigInt
+  consultation_id BigInt        @unique
+  amount          Decimal       @db.Decimal
+  payment_status  String        @db.VarChar
+  invoice_date    DateTime
+  consultations   consultations @relation(fields: [consultation_id], references: [consultation_id])
+  hospitals       hospitals     @relation(fields: [hospital_id], references: [hospital_id])
+  patients        patients      @relation(fields: [patient_id], references: [patient_id])
+}
+
+model consultations {
+  consultation_id         BigInt                    @id @default(autoincrement())
+  patient_id              BigInt
+  doctor_id               BigInt
+  token_id                BigInt                    @unique
+  reason_for_visit        String
+  clinical_alerts         String
+  stage                   String                    @db.VarChar
+  consultation_notes      String
+  start_time              DateTime
+  end_time                DateTime
+  duration                Int
+  consultation_status     String                    @db.VarChar
+  billing_invoices        billing_invoices?
+  doctors                 doctors                   @relation(fields: [doctor_id], references: [doctor_id])
+  patients                patients                  @relation(fields: [patient_id], references: [patient_id])
+  queue_tokens            queue_tokens              @relation(fields: [token_id], references: [token_id])
+  follow_up_consultations follow_up_consultations[]
+  lab_reports             lab_reports[]
+}
+
+model departments {
+  department_id   BigInt    @id @default(autoincrement())
+  hospital_id     BigInt
+  department_name String    @db.VarChar
+  location        String    @db.VarChar
+  daily_capacity  Int
+  created_at      DateTime  @default(now())
+  hospitals       hospitals @relation(fields: [hospital_id], references: [hospital_id])
+  doctors         doctors[]
+}
+
+model doctors {
+  doctor_id               BigInt                    @id @default(autoincrement())
+  user_id                 BigInt                    @unique
+  hospital_id             BigInt
+  department_id           BigInt
+  specialization          String                    @db.VarChar
+  qualification           String                    @db.VarChar
+  experience_years        Int
+  rating                  Decimal                   @db.Decimal
+  availability_status     String                    @db.VarChar
+  phone                   String?                   @db.VarChar
+  opd                     String?                   @db.VarChar
+  schedule                String?                   @db.VarChar
+  bio                     String?                   @db.Text
+  focus                   String?                   @db.Text
+  credentials             String?                   @db.Text
+  room                    String?                   @db.VarChar
+  awards                  String?                   @db.Text
+  appointments            appointments[]
+  consultations           consultations[]
+  departments             departments               @relation(fields: [department_id], references: [department_id])
+  hospitals               hospitals                 @relation(fields: [hospital_id], references: [hospital_id])
+  users                   users                     @relation(fields: [user_id], references: [user_id])
+  follow_up_consultations follow_up_consultations[]
+  lab_reports             lab_reports[]
+  patients                patients[]
+  queue_tokens            queue_tokens[]
+  walk_in_patients        walk_in_patients[]
+}
+
+model follow_up_consultations {
+  followup_id            BigInt        @id @default(autoincrement())
+  parent_consultation_id BigInt
+  patient_id             BigInt
+  doctor_id              BigInt
+  hospital_id            BigInt
+  appointment_id         BigInt?       @unique
+  token_id               BigInt?       @unique
+  revisit_reason         String
+  test_results_attached  Boolean
+  planned_duration_mins  Int
+  followup_notes         String
+  followup_status        String        @db.VarChar
+  appointments           appointments? @relation(fields: [appointment_id], references: [appointment_id])
+  doctors                doctors       @relation(fields: [doctor_id], references: [doctor_id])
+  hospitals              hospitals     @relation(fields: [hospital_id], references: [hospital_id])
+  consultations          consultations @relation(fields: [parent_consultation_id], references: [consultation_id])
+  patients               patients      @relation(fields: [patient_id], references: [patient_id])
+  queue_tokens           queue_tokens? @relation(fields: [token_id], references: [token_id])
+}
+
+model hospitals {
+  hospital_id             BigInt                    @id @default(autoincrement())
+  hospital_name           String                    @db.VarChar
+  registration_no         String                    @db.VarChar
+  branch_name             String                    @db.VarChar
+  address                 String
+  phone                   String                    @db.VarChar
+  email                   String                    @db.VarChar
+  working_hours           String                    @db.VarChar
+  created_at              DateTime                  @default(now())
+  admins                  admins[]
+  appointments            appointments[]
+  billing_invoices        billing_invoices[]
+  departments             departments[]
+  doctors                 doctors[]
+  follow_up_consultations follow_up_consultations[]
+  lab_reports             lab_reports[]
+  notifications           notifications[]
+  patients                patients[]
+  queue_tokens            queue_tokens[]
+  receptionists           receptionists[]
+  users                   users[]
+  walk_in_patients        walk_in_patients[]
+}
+
+model lab_reports {
+  report_id       BigInt         @id @default(autoincrement())
+  patient_id      BigInt
+  doctor_id       BigInt
+  hospital_id     BigInt
+  consultation_id BigInt?
+  report_type     String         @db.VarChar(50)
+  report_name     String         @db.VarChar(150)
+  report_file_url String
+  uploaded_by     String         @db.VarChar(20)
+  report_status   String         @db.VarChar(20)
+  uploaded_at     DateTime
+  reviewed_at     DateTime?
+  created_at      DateTime       @default(now())
+  consultations   consultations? @relation(fields: [consultation_id], references: [consultation_id])
+  doctors         doctors        @relation(fields: [doctor_id], references: [doctor_id])
+  hospitals       hospitals      @relation(fields: [hospital_id], references: [hospital_id])
+  patients        patients       @relation(fields: [patient_id], references: [patient_id])
+}
+
+model notifications {
+  notification_id BigInt    @id @default(autoincrement())
+  hospital_id     BigInt
+  user_id         BigInt
+  category        String    @db.VarChar
+  title           String    @db.VarChar
+  message         String
+  severity        String    @db.VarChar
+  is_read         Boolean   @default(false)
+  created_at      DateTime  @default(now())
+  hospitals       hospitals @relation(fields: [hospital_id], references: [hospital_id])
+  users           users     @relation(fields: [user_id], references: [user_id])
+}
+
+model patients {
+  patient_id              BigInt                    @id @default(autoincrement())
+  hospital_id             BigInt
+  primary_doctor_id       BigInt?
+  uhid                    String                    @db.VarChar
+  full_name               String                    @db.VarChar
+  age                     Int
+  gender                  String                    @db.VarChar
+  blood_group             String                    @db.VarChar
+  billing_status          String                    @db.VarChar
+  patient_status          String                    @db.VarChar
+  abha_id                 String?                   @db.VarChar
+  dob                     String?                   @db.VarChar
+  email                   String?                   @db.VarChar
+  phone                   String?                   @db.VarChar
+  user_id                 BigInt?                   @unique
+  appointments            appointments[]
+  billing_invoices        billing_invoices[]
+  consultations           consultations[]
+  follow_up_consultations follow_up_consultations[]
+  lab_reports             lab_reports[]
+  patient_profiles        patient_profiles[]
+  hospitals               hospitals                 @relation(fields: [hospital_id], references: [hospital_id])
+  doctors                 doctors?                  @relation(fields: [primary_doctor_id], references: [doctor_id])
+  users                   users?                    @relation(fields: [user_id], references: [user_id])
+  queue_tokens            queue_tokens[]
+}
+
+/// Family members / dependents that an account owner (the `patients` row linked
+/// to a login user) can book appointments and store reports for. This powers
+/// the patient-app "people" filter (filter appointments/reports by person).
+///
+/// NOTE: forward-looking structure. Requires a migration to be created/applied
+/// (`prisma migrate dev`). The patient frontend currently manages this data in
+/// localStorage (see `patient-frontend/lib/people.ts`) and can be switched to
+/// these tables without UI changes. When wiring the backend, also add a nullable
+/// `profile_id` FK on `appointments` and `lab_reports` referencing this model.
+model patient_profiles {
+  profile_id     BigInt   @id @default(autoincrement())
+  /// the account owner this dependent belongs to
+  owner_patient_id BigInt
+  hospital_id    BigInt
+  full_name      String   @db.VarChar
+  /// "Self", "Father", "Mother", or any user-defined custom relation
+  relationship   String   @db.VarChar
+  age            Int?
+  gender         String?  @db.VarChar
+  is_self        Boolean  @default(false)
+  created_at     DateTime @default(now())
+  patients       patients @relation(fields: [owner_patient_id], references: [patient_id])
+
+  @@index([owner_patient_id])
+}
+
+model queue_tokens {
+  token_id                BigInt                   @id @default(autoincrement())
+  patient_id              BigInt
+  doctor_id               BigInt
+  hospital_id             BigInt
+  appointment_id          BigInt?                  @unique
+  walkin_id               BigInt?
+  token_code              String                   @db.VarChar
+  token_type              String                   @db.VarChar
+  queue_position          Int
+  priority_score          Int
+  token_status            String                   @db.VarChar
+  check_in_time           DateTime
+  estimated_wait_time     Int
+  consultations           consultations?
+  follow_up_consultations follow_up_consultations?
+  appointments            appointments?            @relation(fields: [appointment_id], references: [appointment_id])
+  doctors                 doctors                  @relation(fields: [doctor_id], references: [doctor_id])
+  hospitals               hospitals                @relation(fields: [hospital_id], references: [hospital_id])
+  patients                patients                 @relation(fields: [patient_id], references: [patient_id])
+  walk_in_patients        walk_in_patients?        @relation(fields: [walkin_id], references: [walkin_id])
+}
+
+model receptionists {
+  receptionist_id  BigInt             @id @default(autoincrement())
+  user_id          BigInt             @unique
+  hospital_id      BigInt
+  shift_start      DateTime           @db.Time(6)
+  shift_end        DateTime           @db.Time(6)
+  status           String             @db.VarChar
+  hospitals        hospitals          @relation(fields: [hospital_id], references: [hospital_id])
+  users            users              @relation(fields: [user_id], references: [user_id])
+  walk_in_patients walk_in_patients[]
+}
+
+model users {
+  user_id       BigInt          @id @default(autoincrement())
+  hospital_id   BigInt
+  full_name     String          @db.VarChar
+  email         String          @db.VarChar
+  password_hash String
+  role          String          @db.VarChar
+  status        String          @db.VarChar
+  last_login    DateTime?
+  admins        admins?
+  doctors       doctors?
+  notifications notifications[]
+  patients      patients?
+  receptionists receptionists?
+  hospitals     hospitals       @relation(fields: [hospital_id], references: [hospital_id])
+}
+
+model walk_in_patients {
+  walkin_id         BigInt         @id @default(autoincrement())
+  hospital_id       BigInt
+  receptionist_id   BigInt
+  doctor_id         BigInt
+  full_name         String         @db.VarChar
+  age               Int
+  is_senior_citizen Boolean
+  reason_for_visit  String
+  arrival_time      DateTime
+  placement_type    String         @db.VarChar
+  priority_score    Int
+  walkin_status     String         @db.VarChar
+  queue_tokens      queue_tokens[]
+  doctors           doctors        @relation(fields: [doctor_id], references: [doctor_id])
+  hospitals         hospitals      @relation(fields: [hospital_id], references: [hospital_id])
+  receptionists     receptionists  @relation(fields: [receptionist_id], references: [receptionist_id])
+}

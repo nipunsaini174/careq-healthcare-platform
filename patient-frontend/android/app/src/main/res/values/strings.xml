@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Qflow</string>
+    <string name="title_activity_main">Qflow</string>
+    <string name="package_name">com.medicore.qflow</string>
+    <string name="custom_url_scheme">com.medicore.qflow</string>
+</resources>

@@ -1,0 +1,8 @@
+{
+  "appId": "com.medicore.qflow",
+  "appName": "Qflow",
+  "webDir": "out",
+  "server": {
+    "cleartext": true
+  }
+}
