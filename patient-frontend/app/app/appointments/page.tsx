@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "motion/react";
 import { ArrowLeft, Calendar, Clock, User, Activity, ChevronDown, ChevronUp } from "lucide-react";
+import { useProfile } from "@/hooks/useAppData";
 import { usePeople } from "@/hooks/usePeople";
 import { getPersonByName } from "@/lib/people";
 import { PeopleFilterBar, ALL_PEOPLE } from "@/components/people/PeopleFilterBar";
@@ -12,6 +13,7 @@ import { patientApi, type ApiAppointment } from "@/services/api/patientApi";
 export default function AppointmentsPage() {
   const router = useRouter();
   const { people } = usePeople();
+  const { data: profile } = useProfile();
   const [appointments, setAppointments] = useState<ApiAppointment[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -182,7 +184,7 @@ export default function AppointmentsPage() {
                           </div>
                           <div className="flex items-center text-sm col-span-2">
                             <User className="w-4 h-4 text-gray-400 dark:text-[#64748B] mr-2" />
-                            <span className="text-gray-700 dark:text-white font-medium text-xs">Patient: {apt.patientName || "John Doe"}</span>
+                            <span className="text-gray-700 dark:text-white font-medium text-xs">Patient: {apt.patientName || profile?.full_name || "Patient"}</span>
                           </div>
                         </div>
 

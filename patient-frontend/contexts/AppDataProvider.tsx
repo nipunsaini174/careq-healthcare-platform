@@ -150,8 +150,9 @@ function SocketCacheBridge() {
     socket.on("doctor_deleted", onDoctorDeleted);
     socket.on("department_created", onDeptChanged);
     socket.on("department_deleted", onDeptChanged);
-    socket.on("queue:update", onQueueUpdate);
-    socket.on("notification:new", onQueueUpdate);
+    socket.on("queue_updated", onQueueUpdate);
+    socket.on("appointment_updated", onQueueUpdate);
+    socket.on("appointment_created", onQueueUpdate);
 
     return () => {
       socket.off("doctor_created", onDoctorCreated);
@@ -159,8 +160,9 @@ function SocketCacheBridge() {
       socket.off("doctor_deleted", onDoctorDeleted);
       socket.off("department_created", onDeptChanged);
       socket.off("department_deleted", onDeptChanged);
-      socket.off("queue:update", onQueueUpdate);
-      socket.off("notification:new", onQueueUpdate);
+      socket.off("queue_updated", onQueueUpdate);
+      socket.off("appointment_updated", onQueueUpdate);
+      socket.off("appointment_created", onQueueUpdate);
       bridgeInstalled.current = false;
     };
   }, [qc]);

@@ -27,7 +27,8 @@ function startOfToday(): Date {
 export class ReceptionistController {
   createDoctor = async (req: Request, res: Response) => {
     try {
-      const newDoctor = await doctorService.createDoctor(req.body);
+      const hospitalId = await resolveHospitalIdForUser(req);
+      const newDoctor = await doctorService.createDoctor(req.body, hospitalId);
       res.status(201).json(newDoctor);
     } catch (error: any) {
       res.status(400).json({ error: error.message });

@@ -11,7 +11,7 @@ datasource db {
 model admins {
   admin_id    BigInt    @id @default(autoincrement())
   user_id     BigInt    @unique
-  hospital_id BigInt
+  hospital_id BigInt    @unique
   admin_level String    @db.VarChar
   permissions Json
   hospitals   hospitals @relation(fields: [hospital_id], references: [hospital_id])
@@ -140,7 +140,7 @@ model hospitals {
   email                   String                    @db.VarChar
   working_hours           String                    @db.VarChar
   created_at              DateTime                  @default(now())
-  admins                  admins[]
+  admins                  admins?
   appointments            appointments[]
   billing_invoices        billing_invoices[]
   departments             departments[]

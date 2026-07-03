@@ -1,5 +1,6 @@
 import type { Request, Response } from 'express';
 import { prisma } from '../prisma/client.js';
+import { resolveHospitalIdForUser } from '../utils/tenant.js';
 
 type AppointmentRange = 'today' | '7d' | '30d';
 
@@ -26,6 +27,7 @@ function resolveRangeStart(range: AppointmentRange): Date {
 export class ReportController {
   async getDashboardKpis(req: Request, res: Response) {
     try {
+      const hospitalId = await resolveHospitalIdForUser(req);
       const rawRange = typeof req.query.range === 'string' ? req.query.range : 'today';
       const range: AppointmentRange = ALLOWED_RANGES.has(rawRange as AppointmentRange)
         ? (rawRange as AppointmentRange)
@@ -43,25 +45,31 @@ export class ReportController {
         uniquePatients,
       ] = await prisma.$transaction([
         prisma.appointments.count({
-          where: { appointment_date: { gte: rangeStart } }
+          where: { hospital_id: hospitalId, appointment_date: { gte: rangeStart } }
         }),
         prisma.patients.count({
-          where: { patient_status: 'Admitted' }
+          where: { hospital_id: hospitalId, patient_status: 'Admitted' }
         }),
         prisma.queue_tokens.count({
-          where: { token_status: 'Waiting' }
+          where: { hospital_id: hospitalId, token_status: 'Waiting' }
         }),
         prisma.consultations.count({
-          where: { consultation_status: 'In Progress' }
+          where: {
+            patients: { hospital_id: hospitalId },
+            consultation_status: 'In Progress' 
+          }
         }),
         prisma.lab_reports.count({
-          where: { report_status: 'Pending' }
+          where: { hospital_id: hospitalId, report_status: 'Pending' }
         }),
         prisma.consultations.count({
-          where: { consultation_status: 'Completed' }
+          where: {
+            patients: { hospital_id: hospitalId },
+            consultation_status: 'Completed' 
+          }
         }),
         prisma.queue_tokens.count({
-          where: { token_status: 'No Show' }
+          where: { hospital_id: hospitalId, token_status: 'No Show' }
         }),
         // Count of DISTINCT patient_id with an appointment in the
         // selected window — answers "how many real people booked
@@ -69,7 +77,7 @@ export class ReportController {
         // one row per patient; we read the length of that array.
         prisma.appointments.groupBy({
           by: ['patient_id'],
-          where: { appointment_date: { gte: rangeStart } },
+          where: { hospital_id: hospitalId, appointment_date: { gte: rangeStart } },
           orderBy: { patient_id: 'asc' },
           _count: { patient_id: true },
         }),

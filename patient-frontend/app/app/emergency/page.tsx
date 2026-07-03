@@ -7,29 +7,9 @@ export default function EmergencyAssistance() {
   const emergencyContacts = [
     { name: "Emergency Services", number: "108", type: "National Emergency" },
     { name: "Ambulance", number: "102", type: "Medical Emergency" },
-    { name: "City General Hospital", number: "+91 98765 43210", type: "Hospital" },
   ];
 
-  const nearbyHospitals = [
-    {
-      name: "City General Hospital",
-      distance: "2.3 km",
-      address: "123 Main St, City Center",
-      emergency: true,
-    },
-    {
-      name: "MedCare Emergency Center",
-      distance: "4.1 km",
-      address: "456 Park Ave, Downtown",
-      emergency: true,
-    },
-    {
-      name: "Rainbow Medical Center",
-      distance: "5.5 km",
-      address: "789 Health Blvd, Suburbs",
-      emergency: false,
-    },
-  ];
+  const nearbyHospitals: any[] = [];
 
   const cardCls =
     "bg-white dark:bg-[#1A2332] border border-gray-100 dark:border-[#2A3A4E] rounded-3xl shadow-sm dark:shadow-black/20";

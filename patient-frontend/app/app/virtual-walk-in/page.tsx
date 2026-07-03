@@ -1,31 +1,33 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "motion/react";
 import { Building2, Stethoscope, User, QrCode, Clock, Users } from "lucide-react";
 
-const hospitals = [
-  { id: 1, name: "City General Hospital", distance: "2.3 km" },
-  { id: 2, name: "MedCare Private Hospital", distance: "4.1 km" },
-  { id: 3, name: "Rainbow Children's Hospital", distance: "3.5 km" },
-];
-
-const departments = [
-  { id: 1, name: "General Medicine", wait: "15 mins", queue: 5 },
-  { id: 2, name: "Cardiology", wait: "30 mins", queue: 8 },
-  { id: 3, name: "Orthopedics", wait: "20 mins", queue: 6 },
-];
-
-const doctors = [
-  { id: 1, name: "Dr. Sarah Johnson", available: true },
-  { id: 2, name: "Dr. Michael Chen", available: false },
-  { id: 3, name: "Any Available Doctor", available: true },
-];
+import { patientApi } from "@/services/api/patientApi";
 
 export default function VirtualWalkInToken() {
   const router = useRouter();
   const [step, setStep] = useState(1);
+  const [hospitals, setHospitals] = useState<any[]>([]);
+  const [departments, setDepartments] = useState<any[]>([]);
+  const [doctors, setDoctors] = useState<any[]>([]);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const hosps = await patientApi.getHospitals();
+        setHospitals(hosps.map((h: any) => ({
+          id: h.id || h.hospital_id,
+          name: h.name || h.hospital_name,
+          distance: "2.5 km"
+        })));
+      } catch (err) {
+        console.error(err);
+      }
+    })();
+  }, []);
   const [selectedHospital, setSelectedHospital] = useState("");
   const [selectedDepartment, setSelectedDepartment] = useState("");
   const [selectedDoctor, setSelectedDoctor] = useState("");
@@ -96,8 +98,8 @@ export default function VirtualWalkInToken() {
 
             <div className="bg-gray-50 dark:bg-[#0F1722] border border-gray-100 dark:border-[#2A3A4E] rounded-2xl p-4">
               <p className="text-xs text-gray-500 dark:text-[#94A3B8] mb-2">Location</p>
-              <p className="text-gray-900 dark:text-white font-medium mb-1">City General Hospital</p>
-              <p className="text-sm text-gray-600 dark:text-[#94A3B8]">Dr. Sarah Johnson — Cardiology</p>
+              <p className="text-gray-900 dark:text-white font-medium mb-1">{selectedHospital || "Hospital Name"}</p>
+              <p className="text-sm text-gray-600 dark:text-[#94A3B8]">{selectedDoctor || "Doctor Name"} — {selectedDepartment || "Department"}</p>
             </div>
           </div>
 

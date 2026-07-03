@@ -3,6 +3,7 @@
 import { Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { motion } from "motion/react";
+import { useProfile } from "@/hooks/useAppData";
 import {
   CheckCircle,
   Calendar,
@@ -23,10 +24,11 @@ function AppointmentConfirmationContent() {
   const bookingType = searchParams.get("bookingType") || "self";
   const appointmentId = searchParams.get("appointmentId") || "APT-2024-6789";
   
-  const hospitalName = searchParams.get("hospitalName") || "City General Hospital";
+  const hospitalName = searchParams.get("hospitalName") || "Hospital Name";
   
   // For "other" booking type
-  const patientName = searchParams.get("patientName") || "John Doe";
+  const { data: profile } = useProfile();
+  const patientName = searchParams.get("patientName") || profile?.full_name || "Patient";
   const patientAge = searchParams.get("patientAge") || "35";
   const patientGender = searchParams.get("patientGender") || "Male";
   const relationship = searchParams.get("relationship") || "Self";

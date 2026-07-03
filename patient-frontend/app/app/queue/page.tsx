@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "motion/react";
+import { useProfile, useAppointments, useCancelAppointment } from "@/hooks/useAppData";
 import {
   Clock,
   Users,
@@ -30,39 +31,34 @@ export default function MyQueue() {
   const [isCancelling, setIsCancelling] = useState(false);
   const [cancelDone, setCancelDone] = useState(false);
 
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const initialAptId = params.get("appointmentId");
-    if (initialAptId) setActiveAppointmentId(initialAptId);
+  const { data: allAppointments = [] } = useAppointments();
+  const cancelMutation = useCancelAppointment();
 
-    let cancelled = false;
-    (async () => {
-      try {
-        const list = await patientApi.getAppointments();
-        if (cancelled) return;
-        const upcoming = list.filter((a) => a.status === "Upcoming");
-        setAppointments(upcoming);
-        if (!initialAptId && upcoming.length > 0) {
-          setActiveAppointmentId(upcoming[0].id);
-        }
-      } catch (_e) {
-        if (!cancelled) setAppointments([]);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const initialAptId = params.get("appointmentId");
+      if (initialAptId && !activeAppointmentId) setActiveAppointmentId(initialAptId);
+    }
+
+    const upcoming = allAppointments.filter((a) => a.status === "Upcoming");
+    setAppointments(upcoming);
+    
+    if (!activeAppointmentId && upcoming.length > 0) {
+      // If we don't have an active one, pick the first one
+      setActiveAppointmentId(upcoming[0].id);
+    } else if (activeAppointmentId && upcoming.length > 0 && !upcoming.some(a => a.id === activeAppointmentId)) {
+      // If the currently active one is no longer 'Upcoming' (e.g. cancelled/completed), switch to the first available
+      setActiveAppointmentId(upcoming[0].id);
+    }
+  }, [allAppointments, activeAppointmentId]);
 
   const handleConfirmCancel = async () => {
     if (!activeAppointmentId) return;
     setIsCancelling(true);
     try {
-      await patientApi.cancelAppointment(activeAppointmentId);
+      await cancelMutation.mutateAsync(activeAppointmentId);
     } catch (e) {
-      // Best-effort: still close the dialog so the user isn't stuck if the
-      // request failed transiently. They'll see the un-cancelled state on
-      // the next load and can retry.
       console.error("Failed to cancel appointment", e);
     }
     setIsCancelling(false);
@@ -75,7 +71,8 @@ export default function MyQueue() {
   const tokenDisplay = activeApt ? activeApt.id.replace("APT-", "T-") : "T-142";
   const doctorDisplay = activeApt ? activeApt.doctorName : "Dr. Sarah Johnson";
   const departmentDisplay = activeApt ? activeApt.department : "Cardiology Department";
-  const patientDisplay = activeApt ? `${activeApt.patientName} (${activeApt.relationship})` : "John Doe (Self)";
+  const { data: profile } = useProfile();
+  const patientDisplay = activeApt ? `${activeApt.patientName} (${activeApt.relationship})` : (profile?.full_name ? `${profile.full_name} (Self)` : "Patient (Self)");
 
   return (
     <div className="min-h-full bg-gray-50 dark:bg-[#0B0F14] pb-6">
@@ -247,7 +244,7 @@ export default function MyQueue() {
                     <MapPin className="w-5 h-5 text-gray-400 dark:text-[#64748B] mr-3 mt-0.5" />
                     <div>
                       <p className="text-xs text-gray-500 dark:text-[#94A3B8] uppercase tracking-wider font-medium mb-0.5">Location</p>
-                      <p className="text-sm text-gray-900 dark:text-white font-medium">City General Hospital, Room 3A</p>
+                      <p className="text-sm text-gray-900 dark:text-white font-medium">Hospital Name, Room 3A</p>
                       <p className="text-xs text-gray-500 dark:text-[#94A3B8]">{departmentDisplay}</p>
                     </div>
                   </div>

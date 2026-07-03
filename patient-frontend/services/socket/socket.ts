@@ -50,7 +50,9 @@ export interface DirectoryDepartmentDeleted {
 }
 
 export interface ServerToClientEvents {
-  "queue:update": (data: any) => void;
+  queue_updated: (data: any) => void;
+  appointment_updated: (data: any) => void;
+  appointment_created: (data: any) => void;
   "notification:new": (data: any) => void;
   // Directory mutations broadcast from the hospital app — patients use
   // them to live-refresh the Book Appointment screen.
@@ -105,7 +107,7 @@ export function disconnectSocket() {
 // ---- Hook: Queue Updates ----
 export function useQueueSocket(
   tokenId: string | null,
-  onUpdate: (data: Parameters<ServerToClientEvents["queue:update"]>[0]) => void
+  onUpdate: (data: Parameters<ServerToClientEvents["queue_updated"]>[0]) => void
 ) {
   const onUpdateRef = useRef(onUpdate);
   onUpdateRef.current = onUpdate;
@@ -117,14 +119,14 @@ export function useQueueSocket(
 
     socket.emit("queue:subscribe", { tokenId });
 
-    const handler = (data: Parameters<ServerToClientEvents["queue:update"]>[0]) => {
+    const handler = (data: Parameters<ServerToClientEvents["queue_updated"]>[0]) => {
       onUpdateRef.current(data);
     };
 
-    socket.on("queue:update", handler);
+    socket.on("queue_updated", handler);
 
     return () => {
-      socket.off("queue:update", handler);
+      socket.off("queue_updated", handler);
     };
   }, [tokenId]);
 }

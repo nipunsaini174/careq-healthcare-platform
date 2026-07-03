@@ -2,10 +2,12 @@
 
 import { useRouter } from "next/navigation";
 import { motion } from "motion/react";
-import { Download, Share2, Printer, Save, ArrowLeft, FileText } from "lucide-react";
+import { Download, Share2, Printer, Save, ArrowLeft, FileText, User } from "lucide-react";
+import { useProfile } from "../../../hooks/useAppData";
 
 export default function ReportViewer() {
   const router = useRouter();
+  const { data: profile } = useProfile();
 
   const ghostBtn =
     "bg-white dark:bg-[#1A2332] border-2 border-gray-200 dark:border-[#2A3A4E] text-gray-700 dark:text-[#CBD5E1] py-4 rounded-2xl font-medium flex items-center justify-center hover:bg-gray-50 dark:hover:bg-[#223040] transition-colors";
@@ -43,7 +45,7 @@ export default function ReportViewer() {
                 <div className="flex items-center justify-between mb-4">
                   <div>
                     <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-1">
-                      City General Hospital
+                      Hospital Name
                     </h2>
                     <p className="text-sm text-gray-600 dark:text-[#94A3B8]">Laboratory Services</p>
                   </div>
@@ -54,7 +56,7 @@ export default function ReportViewer() {
                 <div className="grid grid-cols-2 gap-4 text-sm">
                   <div>
                     <p className="text-gray-500 dark:text-[#94A3B8]">Patient Name</p>
-                    <p className="text-gray-900 dark:text-white font-medium">John Doe</p>
+                    <p className="text-gray-900 dark:text-white font-medium">{profile?.full_name || "Patient"}</p>
                   </div>
                   <div>
                     <p className="text-gray-500 dark:text-[#94A3B8]">Report ID</p>

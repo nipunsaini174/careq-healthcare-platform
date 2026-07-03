@@ -22,7 +22,10 @@ export default function LoginPage() {
     try {
       const response = await authService.login({ email, password });
 
-      // Note: You could verify if response.data.user.role matches the selectedRole here if needed
+      // Verify that the user's role matches the selected role
+      if (response.data.user.role.toLowerCase() !== selectedRole?.toLowerCase()) {
+        throw new Error(`Unauthorized. You do not have ${selectedRole} privileges.`);
+      }
 
       if (selectedRole === "ADMIN") {
         router.push("/dashboard/admin");

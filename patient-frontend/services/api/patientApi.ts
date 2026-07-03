@@ -65,4 +65,14 @@ export const patientApi = {
     );
     return data.data;
   },
+
+  getHospitals: async () => {
+    const { data } = await axiosInstance.get('/hospitals');
+    return data.data || [];
+  },
+
+  getDoctors: async () => {
+    const { data } = await axiosInstance.get('/doctors');
+    return data.data || [];
+  },
 };

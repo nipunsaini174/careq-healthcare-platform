@@ -2,6 +2,9 @@
 
 import React, { useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
+import { useQuery } from "@tanstack/react-query";
+import { QK } from "@/contexts/AppDataProvider";
+import { patientApi } from "@/services/api/patientApi";
 import {
   Home,
   Calendar,
@@ -42,6 +45,11 @@ const mobileNavItems = [
 export function DesktopAppShell({ children }: DesktopAppShellProps) {
   const pathname = usePathname();
   const router = useRouter();
+
+  const { data: profile } = useQuery({
+    queryKey: QK.profile,
+    queryFn: patientApi.getProfile,
+  });
 
   const isActive = (path: string) => {
     if (path === "/app/home" && (pathname === "/app" || pathname === "/app/")) return true;
@@ -86,12 +94,12 @@ export function DesktopAppShell({ children }: DesktopAppShellProps) {
             className="flex items-center gap-3 cursor-pointer hover:bg-gray-100 dark:hover:bg-[#1A2332] rounded-xl px-3 py-2 transition-colors"
             onClick={() => router.push("/app/profile")}
           >
-            <div className="w-9 h-9 bg-gradient-to-br from-teal-400 to-teal-500 dark:from-emerald-600 dark:to-emerald-700 rounded-full flex items-center justify-center text-sm text-white font-medium">
-              JD
+            <div className="w-9 h-9 bg-gradient-to-br from-teal-400 to-teal-500 dark:from-emerald-600 dark:to-emerald-700 rounded-full flex items-center justify-center text-sm text-white font-medium uppercase">
+              {profile?.full_name ? profile.full_name.split(' ').map((n: string) => n[0]).join('').substring(0, 2) : "U"}
             </div>
             <div className="text-left">
               <p className="text-sm font-medium text-gray-900 dark:text-white leading-tight">
-                John Doe
+                {profile?.full_name || "Loading..."}
               </p>
               <p className="text-[11px] text-gray-500 leading-tight">Patient</p>
             </div>

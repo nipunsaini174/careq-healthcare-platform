@@ -21,23 +21,11 @@ interface SearchableHospital {
   location: string;
 }
 
-const DOCTORS: SearchableDoctor[] = [
-  { id: "d1", name: "Dr. Sarah Johnson", specialty: "Heart Specialist", department: "Cardiology", hospitalName: "City General Hospital" },
-  { id: "d2", name: "Dr. Michael Chen", specialty: "Bone & Joint Specialist", department: "Orthopedics", hospitalName: "MedCare Private" },
-  { id: "d3", name: "Dr. Priya Sharma", specialty: "Child Health Expert", department: "Pediatrics", hospitalName: "Rainbow Children's Hospital" },
-  { id: "d4", name: "Dr. James Wilson", specialty: "General Physician", department: "General", hospitalName: "City General Hospital" },
-];
+const DOCTORS: SearchableDoctor[] = [];
 
-const HOSPITALS: SearchableHospital[] = [
-  { id: "h1", name: "City General Hospital", location: "Downtown Medical District" },
-  { id: "h2", name: "MedCare Private", location: "Westside Tech Park" },
-  { id: "h3", name: "Rainbow Children's Hospital", location: "North Suburbs" },
-  { id: "h4", name: "Apollo Prime Hospital", location: "Business District" },
-  { id: "h5", name: "Sunrise Community Hospital", location: "Eastside Residential" },
-  { id: "h6", name: "Elite Eye & Dental Care", location: "Metro Center" },
-  { id: "h7", name: "Hope Cancer Institute", location: "Medical City Complex" },
-  { id: "h8", name: "Harmony Wellness Clinic", location: "South Park Avenue" },
-];
+const HOSPITALS: SearchableHospital[] = [];
+
+import { patientApi } from "@/services/api/patientApi";
 
 export function SmartSearchBar() {
   const router = useRouter();
@@ -45,21 +33,52 @@ export function SmartSearchBar() {
   const [isOpen, setIsOpen] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
+  const [fetchedDoctors, setFetchedDoctors] = useState<SearchableDoctor[]>([]);
+  const [fetchedHospitals, setFetchedHospitals] = useState<SearchableHospital[]>([]);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const [docs, hosps] = await Promise.all([
+          patientApi.getDoctors(),
+          patientApi.getHospitals()
+        ]);
+        
+        // Map backend responses to the Searchable interfaces
+        setFetchedDoctors(docs.map((d: any) => ({
+          id: d.id || d.doctor_id,
+          name: d.name || d.users?.full_name || 'Doctor',
+          specialty: d.specialization || d.specialty || d.departments?.department_name || 'General',
+          department: d.dept || d.department || d.departments?.department_name || 'General',
+          hospitalName: d.hospitalName || d.hospitals?.hospital_name || 'Hospital'
+        })));
+
+        setFetchedHospitals(hosps.map((h: any) => ({
+          id: h.id || h.hospital_id,
+          name: h.name || h.hospital_name || 'Hospital',
+          location: h.address || h.location || 'Unknown'
+        })));
+      } catch (err) {
+        console.error("Failed to fetch catalog:", err);
+      }
+    })();
+  }, []);
+
   const { doctors, hospitals } = useMemo(() => {
     const q = query.trim().toLowerCase();
     if (!q) return { doctors: [] as SearchableDoctor[], hospitals: [] as SearchableHospital[] };
     return {
-      doctors: DOCTORS.filter(
+      doctors: fetchedDoctors.filter(
         (d) =>
           d.name.toLowerCase().includes(q) ||
           d.specialty.toLowerCase().includes(q) ||
           d.department.toLowerCase().includes(q)
       ),
-      hospitals: HOSPITALS.filter(
+      hospitals: fetchedHospitals.filter(
         (h) => h.name.toLowerCase().includes(q) || h.location.toLowerCase().includes(q)
       ),
     };
-  }, [query]);
+  }, [query, fetchedDoctors, fetchedHospitals]);
 
   const totalResults = doctors.length + hospitals.length;
 

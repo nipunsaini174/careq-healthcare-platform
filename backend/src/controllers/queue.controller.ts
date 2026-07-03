@@ -4,15 +4,18 @@ import { prisma } from '../prisma/client.js';
 export class QueueController {
   async getQueuesLoad(req: Request, res: Response) {
     try {
+      const { resolveHospitalIdForUser } = await import('../utils/tenant.js');
+      const hospitalId = await resolveHospitalIdForUser(req);
+
       // In a full implementation, we would group queue_tokens by department/type.
       // For dashboard visualization, we aggregate counts for the main hospital queues.
       
       const opdWait = await prisma.queue_tokens.count({
-        where: { token_status: 'Waiting', token_type: 'OPD' }
+        where: { hospital_id: hospitalId, token_status: 'Waiting', token_type: 'OPD' }
       });
       
       const labWait = await prisma.queue_tokens.count({
-        where: { token_status: 'Waiting', token_type: 'Lab' }
+        where: { hospital_id: hospitalId, token_status: 'Waiting', token_type: 'Lab' }
       });
 
       const queues = [

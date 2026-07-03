@@ -24,7 +24,13 @@ export class DoctorController {
 
   getAllDoctors = async (req: Request, res: Response) => {
     try {
-      const doctors = await doctorService.getAllDoctors();
+      const user = (req as any).user;
+      let hospitalId: bigint | undefined;
+      if (user) {
+        const { resolveHospitalIdForUser } = await import('../utils/tenant.js');
+        hospitalId = await resolveHospitalIdForUser(req);
+      }
+      const doctors = await doctorService.getAllDoctors(hospitalId);
       res.status(200).json(doctors);
     } catch (error: any) {
       res.status(500).json({ error: error.message });
@@ -43,7 +49,9 @@ export class DoctorController {
 
   createDoctor = async (req: Request, res: Response) => {
     try {
-      const newDoctor = await doctorService.createDoctor(req.body);
+      const { resolveHospitalIdForUser } = await import('../utils/tenant.js');
+      const hospitalId = await resolveHospitalIdForUser(req);
+      const newDoctor = await doctorService.createDoctor(req.body, hospitalId);
       res.status(201).json(newDoctor);
     } catch (error: any) {
       res.status(400).json({ error: error.message });

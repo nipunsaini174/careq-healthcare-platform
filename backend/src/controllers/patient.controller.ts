@@ -1,6 +1,7 @@
 import type { Request, Response } from 'express';
 import { prisma } from '../prisma/client.js';
 import { safeEmit } from '../sockets/emit.js';
+import { resolveHospitalIdForUser } from '../utils/tenant.js';
 
 /**
  * Build the rich socket payload sent on appointment_created/updated.
@@ -464,7 +465,9 @@ export class PatientController {
 
   async getAllPatients(req: Request, res: Response) {
     try {
+      const hospitalId = await resolveHospitalIdForUser(req);
       const patientsList = await prisma.patients.findMany({
+        where: { hospital_id: hospitalId },
         include: {
           doctors: {
             include: {
@@ -500,26 +503,21 @@ export class PatientController {
 
   async registerPatient(req: Request, res: Response) {
     try {
+      const hospitalId = await resolveHospitalIdForUser(req);
       const { name, age, gender, blood, phone, email, dept, doctor, address, condition, status } = req.body;
 
-      // Ensure hospital exists
-      const hospital = await prisma.hospitals.findFirst();
-      if (!hospital) {
-        return res.status(400).json({ error: 'System lacks a hospital configuration.' });
-      }
-
-      // Find doctor by name or fallback to first doctor
+      // Find doctor by name or fallback to first doctor in the hospital
       let doc = await prisma.doctors.findFirst({
-        where: { users: { full_name: { contains: doctor, mode: 'insensitive' } } }
+        where: { hospital_id: hospitalId, users: { full_name: { contains: doctor, mode: 'insensitive' } } }
       });
-      if (!doc) doc = await prisma.doctors.findFirst();
+      if (!doc) doc = await prisma.doctors.findFirst({ where: { hospital_id: hospitalId } });
       if (!doc) {
         return res.status(400).json({ error: 'No doctors available in the system.' });
       }
 
       const newPatient = await prisma.patients.create({
         data: {
-          hospital_id: hospital.hospital_id,
+          hospital_id: hospitalId,
           primary_doctor_id: doc.doctor_id,
           uhid: `UHID-${Date.now().toString().slice(-6)}`,
           full_name: name,

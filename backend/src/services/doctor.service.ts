@@ -42,11 +42,14 @@ function mapDoctorRow(doc: any) {
 export type DoctorDto = ReturnType<typeof mapDoctorRow>;
 
 export class DoctorService {
-  async getAllDoctors() {
+  async getAllDoctors(hospitalId?: bigint) {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
+    const whereClause = hospitalId ? { hospital_id: hospitalId } : {};
+
     const doctors = await prisma.doctors.findMany({
+      where: whereClause,
       include: {
         users: true,
         departments: true,
@@ -95,7 +98,7 @@ export class DoctorService {
       .sort((a, b) => a.name.localeCompare(b.name));
   }
 
-  async createDoctor(data: any) {
+  async createDoctor(data: any, adminHospitalId: bigint) {
     const { name, dept, qualification, experience, phone, email, opd, schedule, bio, status, password, focus, awards } = data;
 
     // Check if user already exists
@@ -107,20 +110,12 @@ export class DoctorService {
       throw new Error('User already exists with this email');
     }
 
-    // Default to the first hospital, or create one if none exist
-    let hospital = await prisma.hospitals.findFirst();
+    // Must exist under the admin's hospital
+    const hospital = await prisma.hospitals.findUnique({
+      where: { hospital_id: adminHospitalId }
+    });
     if (!hospital) {
-      hospital = await prisma.hospitals.create({
-        data: {
-          hospital_name: "Main Hospital",
-          registration_no: "REG-001",
-          branch_name: "Main Branch",
-          address: "123 Main St",
-          phone: "1234567890",
-          email: "contact@mainhospital.com",
-          working_hours: "24/7"
-        }
-      });
+      throw new Error('Invalid hospital context.');
     }
 
     // Default or create department based on the string 'dept'

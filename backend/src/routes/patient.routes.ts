@@ -1,11 +1,13 @@
 import { Router } from 'express';
 import { patientController } from '../controllers/patient.controller.js';
 import { authMiddleware } from '../middleware/auth.middleware.js';
+import { tenantScope } from '../middleware/tenant.middleware.js';
 
 const router = Router();
 
-// These routes require authentication
+// These routes require authentication and tenant scope
 router.use(authMiddleware);
+router.use(tenantScope);
 
 // Use /profile as the endpoint for the current logged-in user
 router.get('/profile', patientController.getProfile);
