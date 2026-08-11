@@ -18,7 +18,7 @@ import {
   X,
   Activity,
 } from "lucide-react";
-import { patientApi, type ApiAppointment } from "../../../services/api/patientApi";
+import { patientApi, mapPatientToProfileForm, type ApiAppointment } from "../../../services/api/patientApi";
 import { useLayout } from "@/contexts/LayoutContext";
 import { usePeople } from "@/hooks/usePeople";
 import { getPersonByName } from "@/lib/people";
@@ -45,24 +45,23 @@ export default function Profile() {
   const [tempProfileData, setTempProfileData] = useState(profileData);
   const [passwordData, setPasswordData] = useState({ current: "", new: "", confirm: "" });
   const [isLoading, setIsLoading] = useState(true);
+  const [isSavingProfile, setIsSavingProfile] = useState(false);
   const [rebookApt, setRebookApt] = useState<any | null>(null);
+
+  const loadProfile = async () => {
+    const patientData = await patientApi.getProfile();
+    const formattedData = mapPatientToProfileForm(patientData);
+    setProfileData(formattedData);
+    setTempProfileData(formattedData);
+    return formattedData;
+  };
 
   useEffect(() => {
     const fetchProfile = async () => {
       try {
-        const patientData = await patientApi.getProfile();
-        const formattedData = {
-          name: patientData.full_name || "Unknown",
-          phone: patientData.phone || "",
-          email: patientData.email || "",
-          abhaId: patientData.abha_id || "",
-          dob: patientData.dob ? patientData.dob.split("T")[0] : "",
-        };
-        setProfileData(formattedData);
-        setTempProfileData(formattedData);
+        await loadProfile();
       } catch (error) {
         console.error("Failed to fetch profile", error);
-        // Fallback or handle error silently
       } finally {
         setIsLoading(false);
       }
@@ -86,18 +85,21 @@ export default function Profile() {
 
   const saveProfile = async () => {
     try {
+      setIsSavingProfile(true);
       await patientApi.updateProfile({
-        full_name: tempProfileData.name,
-        phone: tempProfileData.phone,
-        email: tempProfileData.email,
+        full_name: tempProfileData.name.trim(),
+        phone: tempProfileData.phone.trim(),
+        email: tempProfileData.email.trim(),
         dob: tempProfileData.dob,
-        abha_id: tempProfileData.abhaId,
+        abha_id: tempProfileData.abhaId.trim(),
       });
-      setProfileData(tempProfileData);
+      await loadProfile();
       setIsEditingProfile(false);
     } catch (error) {
       console.error("Failed to save profile", error);
-      alert("Failed to update profile.");
+      alert("Failed to update profile. Please try again.");
+    } finally {
+      setIsSavingProfile(false);
     }
   };
 
@@ -481,10 +483,11 @@ export default function Profile() {
             </div>
             
             <button 
-              onClick={saveProfile} 
-              className="w-full mt-6 bg-teal-500 dark:bg-emerald-600 text-white py-4 rounded-xl font-medium shadow-lg hover:bg-[#46bd96] transition-colors"
+              onClick={saveProfile}
+              disabled={isSavingProfile}
+              className="w-full mt-6 bg-teal-500 dark:bg-emerald-600 text-white py-4 rounded-xl font-medium shadow-lg hover:bg-[#46bd96] transition-colors disabled:opacity-60"
             >
-              Save Changes
+              {isSavingProfile ? "Saving..." : "Save Changes"}
             </button>
           </motion.div>
         </div>

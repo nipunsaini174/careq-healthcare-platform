@@ -12,16 +12,16 @@ export default function EnterpriseDashboard() {
   const [isRegistrationOpen, setIsRegistrationOpen] = useState(false);
 
   return (
-    <div className="flex-1 overflow-y-auto bg-gray-50/50 p-8">
-      <div className="max-w-[1600px] mx-auto space-y-8 pb-12">
+    <div className="flex-1 min-w-0 overflow-x-auto overflow-y-auto bg-gray-50/50 p-4 sm:p-6 lg:p-8">
+      <div className="w-full max-w-[1600px] mx-auto min-w-0 space-y-6 pb-8 sm:space-y-8 sm:pb-12">
         
         {/* Page Title Header */}
-        <div className="flex items-end justify-between">
-          <div>
-            <h2 className="text-2xl font-bold text-gray-900 tracking-tight">Real-time Operations Dashboard</h2>
-            <p className="text-sm text-gray-500 mt-1">Monitor live queues, doctor availability, and hospital efficiency.</p>
+        <div className="flex flex-wrap items-end justify-between gap-4">
+          <div className="min-w-0">
+            <h2 className="text-xl font-bold tracking-tight text-gray-900 sm:text-2xl">Real-time Operations Dashboard</h2>
+            <p className="mt-1 text-sm text-gray-500">Monitor live queues, doctor availability, and hospital efficiency.</p>
           </div>
-          <div className="flex gap-3">
+          <div className="flex flex-wrap gap-2 sm:gap-3">
             <button className="px-4 py-2 bg-white border border-gray-200 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors shadow-sm">
               Export Report
             </button>

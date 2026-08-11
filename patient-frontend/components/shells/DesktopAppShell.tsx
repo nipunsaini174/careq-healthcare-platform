@@ -19,6 +19,7 @@ import {
 import { motion } from "motion/react";
 import { FloatingNavigation } from "../FloatingNavigation";
 import { BrandLogo } from "@/components/BrandLogo";
+import { useHydrated } from "@/hooks/useHydrated";
 
 interface DesktopAppShellProps {
   children: React.ReactNode;
@@ -45,11 +46,25 @@ const mobileNavItems = [
 export function DesktopAppShell({ children }: DesktopAppShellProps) {
   const pathname = usePathname();
   const router = useRouter();
+  const hydrated = useHydrated();
 
   const { data: profile } = useQuery({
     queryKey: QK.profile,
     queryFn: patientApi.getProfile,
+    // Profile comes from the JWT + an API round-trip; defer until the
+    // client has mounted so SSR and hydration render the same placeholder.
+    enabled: hydrated,
   });
+
+  const profileInitials =
+    profile?.full_name
+      ? profile.full_name
+          .split(" ")
+          .map((n: string) => n[0])
+          .join("")
+          .substring(0, 2)
+          .toUpperCase()
+      : null;
 
   const isActive = (path: string) => {
     if (path === "/app/home" && (pathname === "/app" || pathname === "/app/")) return true;
@@ -95,11 +110,15 @@ export function DesktopAppShell({ children }: DesktopAppShellProps) {
             onClick={() => router.push("/app/profile")}
           >
             <div className="w-9 h-9 bg-gradient-to-br from-teal-400 to-teal-500 dark:from-emerald-600 dark:to-emerald-700 rounded-full flex items-center justify-center text-sm text-white font-medium uppercase">
-              {profile?.full_name ? profile.full_name.split(' ').map((n: string) => n[0]).join('').substring(0, 2) : "U"}
+              {hydrated && profileInitials ? (
+                profileInitials
+              ) : (
+                <span className="w-4 h-4 rounded-full bg-white/30 animate-pulse" aria-hidden />
+              )}
             </div>
-            <div className="text-left">
+            <div className="text-left min-w-[7rem]">
               <p className="text-sm font-medium text-gray-900 dark:text-white leading-tight">
-                {profile?.full_name || "Loading..."}
+                {hydrated && profile?.full_name ? profile.full_name : "\u00A0"}
               </p>
               <p className="text-[11px] text-gray-500 leading-tight">Patient</p>
             </div>

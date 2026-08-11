@@ -8,15 +8,20 @@ export default function CommandCenter() {
   
   // Queue State - dynamically pulled from useQueue
   const [currentToken, setCurrentToken] = useState('Waiting...');
+  const [activeTokenData, setActiveTokenData] = useState(null);
   const [nextTokens, setNextTokens] = useState([]);
   
   useEffect(() => {
     if (queue && queue.length > 0) {
       const active = queue.find(q => q.status === 'IN_CONSULTATION');
-      const nextOps = queue.filter(q => q.status === 'WAITING').map(q => q.tokenNumber);
+      const nextWaiters = queue.filter(q => q.status === 'WAITING');
       
-      setCurrentToken(active ? active.tokenNumber : (nextOps[0] || 'Empty'));
-      setNextTokens(nextOps.slice(active ? 0 : 1, 6)); // show next 5
+      const current = active || nextWaiters[0] || null;
+      
+      setCurrentToken(current ? current.tokenNumber : 'Empty');
+      setActiveTokenData(current);
+      
+      setNextTokens(nextWaiters.map(q => q.tokenNumber).slice(active ? 0 : 1, 6)); // show next 5
     }
   }, [queue]);
 
@@ -163,7 +168,7 @@ export default function CommandCenter() {
         </div>
       </div>
 
-      <div className="p-6 flex-1 flex flex-col justify-between space-y-6">
+      <div className="p-6 flex-1 flex flex-col justify-start space-y-8">
         
         {/* Top Row: Current Token & Queue Progress */}
         <div className="grid grid-cols-2 gap-8">
@@ -221,10 +226,10 @@ export default function CommandCenter() {
               </div>
               <div className="flex items-center gap-1.5 bg-white/10 backdrop-blur-md px-3 py-1.5 rounded-xl border border-white/20 shadow-[0_4px_12px_rgba(0,0,0,0.05)]">
                 <CheckCircle2 size={14} className="text-white/90" />
-                <span>Dr. Smith</span>
+                <span>{activeTokenData?.doctorName || 'Assigned Doctor'}</span>
               </div>
               <div className="flex items-center gap-1.5 bg-white/10 backdrop-blur-md px-3 py-1.5 rounded-xl border border-white/20 shadow-[0_4px_12px_rgba(0,0,0,0.05)]">
-                <span className="text-white/90">Cardiology</span>
+                <span className="text-white/90">{activeTokenData?.department || 'Department'}</span>
               </div>
             </div>
           </div>

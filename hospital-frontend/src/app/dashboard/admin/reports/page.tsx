@@ -9,6 +9,7 @@ import {
 } from "recharts";
 import { TrendingUp, Users, Activity, DollarSign, Download } from "lucide-react";
 import { toast } from "sonner";
+import { hospitalApi } from "@/services/hospitalApi";
 
 const dailyPatients = [
   { day: "Mon", OPD: 142, Admitted: 38, Emergency: 12, Discharged: 45 },
@@ -74,9 +75,22 @@ const CustomTooltip = ({ active, payload, label }: any) => {
 export default function ReportsAnalytics() {
   const [period, setPeriod] = useState("7D");
   const [mounted, setMounted] = useState(false);
+  const [hospitalName, setHospitalName] = useState<string>("Loading...");
 
   useEffect(() => {
     setMounted(true);
+    const fetchHospital = async () => {
+      try {
+        const hospital = await hospitalApi.getMyHospital();
+        setHospitalName(hospital.hospital_name || "Hospital");
+      } catch (e) {
+        setHospitalName("Unknown Hospital");
+      }
+    };
+    fetchHospital();
+    const handleUpdate = () => fetchHospital();
+    window.addEventListener("hospitalUpdated", handleUpdate);
+    return () => window.removeEventListener("hospitalUpdated", handleUpdate);
   }, []);
 
   if (!mounted) {
@@ -88,7 +102,7 @@ export default function ReportsAnalytics() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-gray-900" style={{ fontSize: "20px", fontWeight: 700 }}>Reports & Analytics</h1>
-          <p className="text-gray-500 mt-0.5" style={{ fontSize: "13px" }}>Executive overview · St. Mary's General Hospital</p>
+          <p className="text-gray-500 mt-0.5" style={{ fontSize: "13px" }}>Executive overview · {hospitalName}</p>
         </div>
         <div className="flex items-center gap-3">
           <div className="flex items-center bg-white rounded-xl border border-gray-200 p-1">

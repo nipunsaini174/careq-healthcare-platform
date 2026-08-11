@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import {
-  Hospital, User, Bell, Shield, Database, Palette,
+  Hospital, User, Bell, Shield, Palette,
   Save, ChevronRight, Mail, Phone, MapPin, Clock, Users,
   X, Plus, Loader2
 } from "lucide-react";
@@ -11,6 +11,7 @@ import { useTheme } from "@/contexts/ThemeContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { useSocket } from "@/contexts/SocketContext";
 import { toast } from "sonner";
+import { adminApi } from "@/services/api";
 import {
   hospitalApi,
   type HospitalDepartment,
@@ -59,8 +60,6 @@ const settingsSections = [
   { key: "queue", icon: Users, label: "Queue Capacity" },
   { key: "account", icon: User, label: "Admin Account" },
   { key: "notifications", icon: Bell, label: "Notifications" },
-  { key: "security", icon: Shield, label: "Security" },
-  { key: "backup", icon: Database, label: "Data & Backup" },
   { key: "appearance", icon: Palette, label: "Appearance" },
 ];
 
@@ -120,8 +119,16 @@ export default function SettingsPage() {
   const [notifications, setNotifications] = useState(notifSettings);
   const [saved, setSaved] = useState(false);
   const { theme, toggleTheme } = useTheme();
-  const { user, loading: authLoading } = useAuth();
+  const { user, loading: authLoading, updateUser } = useAuth();
   const { socket } = useSocket();
+
+  const [adminName, setAdminName] = useState(user?.displayName || "Dr. Admin");
+
+  useEffect(() => {
+    if (user?.displayName) {
+      setAdminName(user.displayName);
+    }
+  }, [user?.displayName]);
 
   // Load the hospital profile + departments as soon as the admin
   // session is ready. We wait on authLoading so the dev bootstrap
@@ -157,9 +164,23 @@ export default function SettingsPage() {
   }
 
   async function handleSave() {
-    // Only the Hospital Profile section persists to the backend right
-    // now. The other tabs (queue/notifications/etc.) stay client-side
-    // until their own endpoints exist.
+    if (activeSection === "account") {
+      try {
+        setIsSaving(true);
+        const data = await adminApi.updateProfile(adminName);
+        updateUser({ displayName: adminName });
+        window.dispatchEvent(new Event("profileUpdated"));
+        setSaved(true);
+        toast.success("Profile updated successfully!");
+        setTimeout(() => setSaved(false), 1800);
+      } catch (err) {
+        toast.error(extractError(err, "Could not update profile"));
+      } finally {
+        setIsSaving(false);
+      }
+      return;
+    }
+
     if (activeSection !== "hospital") {
       setSaved(true);
       toast.success("Settings saved (local only for this section)");
@@ -177,6 +198,7 @@ export default function SettingsPage() {
         address: profileForm.address,
         working_hours: profileForm.working_hours,
       });
+      window.dispatchEvent(new Event("hospitalUpdated"));
       setSaved(true);
       toast.success("Hospital profile saved!");
       setTimeout(() => setSaved(false), 1800);
@@ -419,25 +441,47 @@ export default function SettingsPage() {
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
-                {[
-                  { label: "Full Name", value: user?.displayName || "Dr. Admin Manager" },
-                  { label: "Role", value: "Super Administrator" },
-                  { label: "Email", value: user?.email || "admin@stmarys.in" },
-                  { label: "Phone", value: "+91 98765 43210" },
-                  { label: "Current Password", value: "", placeholder: "Enter current password", type: "password" },
-                  { label: "New Password", value: "", placeholder: "Enter new password", type: "password" },
-                ].map((f) => (
-                  <div key={f.label}>
-                    <label className="text-gray-500 dark:text-gray-400 mb-1.5 block" style={{ fontSize: "11px", fontWeight: 600, textTransform: "uppercase" }}>{f.label}</label>
-                    <input
-                      type={f.type || "text"}
-                      defaultValue={f.value}
-                      placeholder={f.placeholder || ""}
-                      className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-700 dark:text-gray-300 outline-none focus:border-green-400 transition-colors"
-                      style={{ fontSize: "13px" }}
-                    />
-                  </div>
-                ))}
+                <div>
+                  <label className="text-gray-500 dark:text-gray-400 mb-1.5 block" style={{ fontSize: "11px", fontWeight: 600, textTransform: "uppercase" }}>Full Name</label>
+                  <input
+                    type="text"
+                    value={adminName}
+                    onChange={(e) => setAdminName(e.target.value)}
+                    placeholder="Enter your name"
+                    className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-700 dark:text-gray-300 outline-none focus:border-green-400 transition-colors"
+                    style={{ fontSize: "13px" }}
+                  />
+                </div>
+                <div>
+                  <label className="text-gray-500 dark:text-gray-400 mb-1.5 block" style={{ fontSize: "11px", fontWeight: 600, textTransform: "uppercase" }}>Role</label>
+                  <input
+                    type="text"
+                    value="Super Administrator"
+                    disabled
+                    className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-800 text-gray-500 outline-none cursor-not-allowed"
+                    style={{ fontSize: "13px" }}
+                  />
+                </div>
+                <div>
+                  <label className="text-gray-500 dark:text-gray-400 mb-1.5 block" style={{ fontSize: "11px", fontWeight: 600, textTransform: "uppercase" }}>Email</label>
+                  <input
+                    type="email"
+                    value={user?.email || "admin@stmarys.in"}
+                    disabled
+                    className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-800 text-gray-500 outline-none cursor-not-allowed"
+                    style={{ fontSize: "13px" }}
+                  />
+                </div>
+                <div>
+                  <label className="text-gray-500 dark:text-gray-400 mb-1.5 block" style={{ fontSize: "11px", fontWeight: 600, textTransform: "uppercase" }}>Phone</label>
+                  <input
+                    type="text"
+                    value="+91 98765 43210"
+                    disabled
+                    className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-800 text-gray-500 outline-none cursor-not-allowed"
+                    style={{ fontSize: "13px" }}
+                  />
+                </div>
               </div>
             </motion.div>
           )}
@@ -455,41 +499,6 @@ export default function SettingsPage() {
                     <Toggle enabled={n.enabled} onToggle={() => toggleNotif(i)} />
                   </div>
                 ))}
-              </div>
-            </motion.div>
-          )}
-
-          {activeSection === "security" && (
-            <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 p-6">
-              <h2 className="text-gray-800 dark:text-gray-200 mb-5" style={{ fontSize: "16px", fontWeight: 700 }}>Security Settings</h2>
-              <div className="space-y-3">
-                {[
-                  { label: "Two-Factor Authentication", desc: "Require OTP on every login", enabled: true },
-                  { label: "Session Timeout (30 min)", desc: "Auto logout after inactivity", enabled: true },
-                  { label: "Login Activity Log", desc: "Record all login attempts", enabled: true },
-                  { label: "IP Whitelist", desc: "Restrict access to known IPs", enabled: false },
-                  { label: "Audit Trail", desc: "Log all admin actions", enabled: true },
-                ].map((s) => (
-                  <StatefulToggleRow key={s.label} label={s.label} desc={s.desc} initialEnabled={s.enabled} />
-                ))}
-              </div>
-            </motion.div>
-          )}
-
-          {activeSection === "backup" && (
-            <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 p-6">
-              <h2 className="text-gray-800 dark:text-gray-200 mb-5" style={{ fontSize: "16px", fontWeight: 700 }}>Data & Backup</h2>
-              <div className="space-y-4">
-                <div className="p-4 rounded-xl" style={{ background: "#EEF9F5" }}>
-                  <p className="text-gray-700 dark:text-gray-300 font-bold" style={{ fontSize: "13px" }}>Last Backup</p>
-                  <p className="text-gray-500 dark:text-gray-400 mt-1" style={{ fontSize: "12px" }}>Today at 03:00 AM — Automatic daily backup completed successfully (47 GB archived to Cloud)</p>
-                </div>
-                {["Auto Backup (Daily 3:00 AM)", "Cloud Sync (AWS S3)", "Encrypt Backups", "Retain 30-Day History"].map((item) => (
-                  <StatefulToggleRow key={item} label={item} initialEnabled={true} />
-                ))}
-                <button type="button" onClick={() => toast.success("Manual database backup initiated successfully!")} className="w-full py-2.5 rounded-xl border-2 border-dashed border-gray-300 dark:border-gray-600 text-gray-500 dark:text-gray-400 hover:border-green-400 hover:text-green-600 transition-all text-xs font-bold cursor-pointer">
-                  Run Manual Backup Now
-                </button>
               </div>
             </motion.div>
           )}
@@ -520,22 +529,7 @@ export default function SettingsPage() {
                     })}
                   </div>
                 </div>
-                <div>
-                  <p className="text-gray-500 dark:text-gray-400 mb-3" style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase" }}>Primary Branding Color</p>
-                  <div className="flex gap-3">
-                    {["#58D0A7", "#6366F1", "#F97316", "#EF4444", "#8B5CF6", "#0EA5E9"].map((c) => (
-                      <button key={c} onClick={() => toast.info(`Color theme changed to ${c}`)} className="w-10 h-10 rounded-xl border-4 transition-all cursor-pointer" style={{ background: c, borderColor: c === "#58D0A7" ? "white" : "transparent", outline: c === "#58D0A7" ? `3px solid ${c}` : "none" }} />
-                    ))}
-                  </div>
-                </div>
-                <div>
-                  <p className="text-gray-500 dark:text-gray-400 mb-3" style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase" }}>Primary System Language</p>
-                  <select className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-700 dark:text-gray-300 outline-none cursor-pointer" style={{ fontSize: "13px" }}>
-                    <option>English (Global)</option>
-                    <option>Hindi (India)</option>
-                    <option>Spanish</option>
-                  </select>
-                </div>
+
               </div>
             </motion.div>
           )}

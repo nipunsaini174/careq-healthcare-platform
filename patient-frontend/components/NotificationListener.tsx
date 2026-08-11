@@ -5,7 +5,7 @@ import { io, Socket } from "socket.io-client";
 import { toast } from "sonner";
 import { Info, AlertTriangle, AlertCircle } from "lucide-react";
 
-const SOCKET_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+const SOCKET_URL = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000").replace(/\/api$/, "");
 
 let socket: Socket | null = null;
 

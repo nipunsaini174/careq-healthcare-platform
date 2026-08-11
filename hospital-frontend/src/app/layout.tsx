@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/contexts/AuthContext";
@@ -21,6 +21,12 @@ export const metadata: Metadata = {
   description: "Unified Hospital Operations Portal",
 };
 
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 5,
+};
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -28,7 +34,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`} suppressHydrationWarning>
-      <body className="min-h-full flex flex-col" suppressHydrationWarning>
+      <body className="min-h-full min-w-0 flex flex-col overflow-x-auto" suppressHydrationWarning>
         <AuthProvider>
           <SocketProvider>
             <ThemeProvider>

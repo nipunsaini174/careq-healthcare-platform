@@ -14,11 +14,91 @@ export class ReceptionistService {
       id: String(rec.receptionist_id),
       name: rec.users.full_name,
       email: rec.users.email,
-      phone: "", // Can map if added to users in future
+      phone: rec.users.phone || "",
       status: rec.status,
       shift_start: rec.shift_start,
       shift_end: rec.shift_end,
     }));
+  }
+
+  /** Profile payload for the logged-in receptionist's settings page. */
+  formatReceptionistProfile(rec: {
+    receptionist_id: bigint;
+    status: string;
+    shift_start: Date;
+    shift_end: Date;
+    users: { user_id: bigint; full_name: string; email: string; phone: string | null; role: string };
+    hospitals: { hospital_name: string; branch_name: string };
+  }) {
+    return {
+      id: String(rec.receptionist_id),
+      userId: String(rec.users.user_id),
+      name: rec.users.full_name,
+      email: rec.users.email,
+      phone: rec.users.phone || "",
+      role: rec.users.role,
+      status: rec.status,
+      shift_start: rec.shift_start,
+      shift_end: rec.shift_end,
+      hospitalName: rec.hospitals.hospital_name,
+      branchName: rec.hospitals.branch_name,
+    };
+  }
+
+  async getProfileByUserId(userId: bigint) {
+    const rec = await prisma.receptionists.findFirst({
+      where: { user_id: userId },
+      include: {
+        users: true,
+        hospitals: true,
+      },
+    });
+    if (rec) return this.formatReceptionistProfile(rec);
+
+    // Fallback: user exists with RECEPTIONIST role but no receptionists row
+    // (e.g. legacy data). Still return their assigned name/email/phone.
+    const user = await prisma.users.findUnique({
+      where: { user_id: userId },
+      include: { hospitals: true },
+    });
+    if (!user || !/receptionist/i.test(user.role)) {
+      throw new Error('Receptionist profile not found');
+    }
+
+    return {
+      id: '',
+      userId: String(user.user_id),
+      name: user.full_name,
+      email: user.email,
+      phone: user.phone || '',
+      role: user.role,
+      status: user.status,
+      shift_start: new Date('1970-01-01T09:00:00Z'),
+      shift_end: new Date('1970-01-01T17:00:00Z'),
+      hospitalName: user.hospitals?.hospital_name ?? '',
+      branchName: user.hospitals?.branch_name ?? '',
+    };
+  }
+
+  async updateProfileByUserId(userId: bigint, data: { name?: string; phone?: string }) {
+    const rec = await prisma.receptionists.findFirst({
+      where: { user_id: userId },
+      include: { users: true, hospitals: true },
+    });
+    if (!rec) throw new Error('Receptionist profile not found');
+
+    const updatedUser = await prisma.users.update({
+      where: { user_id: userId },
+      data: {
+        ...(data.name !== undefined ? { full_name: data.name.trim() } : {}),
+        ...(data.phone !== undefined ? { phone: data.phone.trim() || null } : {}),
+      },
+    });
+
+    return this.formatReceptionistProfile({
+      ...rec,
+      users: { ...rec.users, ...updatedUser },
+    });
   }
 
   async createReceptionist(hospitalId: bigint, data: any) {
@@ -63,6 +143,7 @@ export class ReceptionistService {
           hospital_id: hospital.hospital_id,
           full_name: name,
           email: email,
+          phone: phone || null,
           password_hash: "SUPABASE_AUTH_DELEGATED",
           role: "RECEPTIONIST",
           status: "active"
@@ -93,7 +174,7 @@ export class ReceptionistService {
       id: String(newReceptionist.receptionist_id),
       name: newReceptionist.users.full_name,
       email: newReceptionist.users.email,
-      phone: phone || "",
+      phone: newReceptionist.users.phone || phone || "",
       status: newReceptionist.status,
       shift_start: newReceptionist.shift_start,
       shift_end: newReceptionist.shift_end,
@@ -156,6 +237,7 @@ export class ReceptionistService {
         data: {
           full_name: name || rec.users.full_name,
           email: email || rec.users.email,
+          ...(phone !== undefined ? { phone: phone || null } : {}),
         }
       });
 
@@ -180,7 +262,7 @@ export class ReceptionistService {
       id: String(updatedReceptionist.receptionist_id),
       name: updatedReceptionist.users.full_name,
       email: updatedReceptionist.users.email,
-      phone: phone || "", // If phone mapping is added to users, pull from there
+      phone: updatedReceptionist.users.phone || phone || "",
       status: updatedReceptionist.status,
       shift_start: updatedReceptionist.shift_start,
       shift_end: updatedReceptionist.shift_end,

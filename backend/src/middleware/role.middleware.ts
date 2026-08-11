@@ -16,7 +16,9 @@ export const requireRole = (...allowedRoles: string[]) => {
       res.status(401).json({ error: 'Unauthorized: missing user context' });
       return;
     }
-    if (!user.role || !allowedRoles.includes(user.role)) {
+    const userRole = String(user.role || '').toLowerCase();
+    const allowed = allowedRoles.map((r) => r.toLowerCase());
+    if (!userRole || !allowed.includes(userRole)) {
       res.status(403).json({ error: `Forbidden: requires role ${allowedRoles.join(' or ')}` });
       return;
     }

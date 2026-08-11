@@ -18,11 +18,19 @@ export class QueueController {
         where: { hospital_id: hospitalId, token_status: 'Waiting', token_type: 'Lab' }
       });
 
+      const billingWait = await prisma.queue_tokens.count({
+        where: { hospital_id: hospitalId, token_status: 'Waiting', token_type: 'Billing' }
+      });
+
+      const pharmacyWait = await prisma.queue_tokens.count({
+        where: { hospital_id: hospitalId, token_status: 'Waiting', token_type: 'Pharmacy' }
+      });
+
       const queues = [
         {
           id: "q-opd-01",
           label: "OPD General",
-          waiting: opdWait || 24, // fallback if DB empty
+          waiting: opdWait,
           max: 50,
           color: "#3AB58F",
           status: "Active",
@@ -30,7 +38,7 @@ export class QueueController {
         {
           id: "q-lab-01",
           label: "Laboratory",
-          waiting: labWait || 12, // fallback
+          waiting: labWait,
           max: 30,
           color: "#6366F1",
           status: "Active",
@@ -38,7 +46,7 @@ export class QueueController {
         {
           id: "q-bil-01",
           label: "Billing / Cashier",
-          waiting: 5,
+          waiting: billingWait,
           max: 15,
           color: "#F97316",
           status: "Active",
@@ -46,7 +54,7 @@ export class QueueController {
         {
           id: "q-pha-01",
           label: "Pharmacy",
-          waiting: 18,
+          waiting: pharmacyWait,
           max: 40,
           color: "#8B5CF6",
           status: "Active",

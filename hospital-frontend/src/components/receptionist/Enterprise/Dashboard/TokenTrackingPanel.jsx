@@ -1,11 +1,11 @@
 "use client";
 import React, { useState } from 'react';
-import { Search, MapPin, User, Stethoscope, Clock, CheckCircle2, ChevronRight, Activity } from 'lucide-react';
+import { Search, MapPin, User, Stethoscope, Clock, CheckCircle2, ChevronRight, Activity, Trash2 } from 'lucide-react';
 import { useQueue } from '@/hooks/useQueue';
 
 export default function TokenTrackingPanel() {
   const [searchQuery, setSearchQuery] = useState('');
-  const { queue, updateTokenStatus } = useQueue();
+  const { queue, updateTokenStatus, removeToken } = useQueue();
   const [expandedTokenId, setExpandedTokenId] = useState(null);
 
   const filteredQueue = queue.filter(q => 
@@ -75,6 +75,7 @@ export default function TokenTrackingPanel() {
                   <div className={`w-auto px-4 min-w-[3rem] h-12 whitespace-nowrap rounded-xl flex items-center justify-center font-black text-lg ${
                     patient.status === 'IN_CONSULTATION' ? 'bg-blue-100 text-blue-700' :
                     patient.status === 'COMPLETED' ? 'bg-green-100 text-green-700' :
+                    patient.status === 'CANCELLED_BY_PATIENT' ? 'bg-red-100 text-red-700 line-through opacity-70' :
                     'bg-gray-100 text-gray-700'
                   }`}>
                     {patient.tokenNumber}
@@ -98,11 +99,21 @@ export default function TokenTrackingPanel() {
                         Mark Present
                       </button>
                     )}
+                    {patient.status === 'CANCELLED_BY_PATIENT' && (
+                      <button 
+                        onClick={(e) => { e.stopPropagation(); removeToken(patient.id); }}
+                        className="flex items-center gap-1.5 px-3 py-1 bg-white border border-red-200 text-red-600 hover:bg-red-50 rounded-md text-[10px] font-bold tracking-wider uppercase transition-colors shadow-sm shrink-0"
+                      >
+                        <Trash2 size={12} />
+                        Remove from Queue
+                      </button>
+                    )}
                     <span className={`px-2.5 py-1 rounded-md text-[10px] font-bold tracking-wider uppercase border ${
                       patient.status === 'WAITING' ? 'bg-orange-50 text-orange-700 border-orange-200' :
                       patient.status === 'IN_CONSULTATION' ? 'bg-blue-50 text-blue-700 border-blue-200' :
                       patient.status === 'COMPLETED' ? 'bg-green-50 text-green-700 border-green-200' :
                       patient.status === 'DELAYED' ? 'bg-red-50 text-red-700 border-red-200' :
+                      patient.status === 'CANCELLED_BY_PATIENT' ? 'bg-red-100 text-red-800 border-red-300 shadow-sm' :
                       'bg-gray-50 text-gray-700 border-gray-200'
                     }`}>
                       {patient.status.replace(/_/g, ' ')}
@@ -115,13 +126,14 @@ export default function TokenTrackingPanel() {
                 </div>
               </div>
               
-              <div className="flex items-center gap-2 mt-4 pt-4 border-t border-gray-100 overflow-x-auto pb-1 scrollbar-hide">
+              <div className="flex items-center flex-wrap gap-2 mt-4 pt-4 border-t border-gray-100 pb-1">
                  <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider mr-1 shrink-0">Status:</span>
                  <StatusButton active={patient.status === 'PRESENT'} colorClass="bg-teal-500 text-white border-teal-600">Present</StatusButton>
                  <StatusButton active={patient.status === 'WAITING'} colorClass="bg-orange-500 text-white border-orange-600">Waiting</StatusButton>
                  <StatusButton active={patient.status === 'IN_CONSULTATION'} colorClass="bg-blue-500 text-white border-blue-600">Consulting</StatusButton>
                  <StatusButton active={patient.status === 'DELAYED'} colorClass="bg-red-500 text-white border-red-600">Delayed</StatusButton>
                  <StatusButton active={patient.status === 'COMPLETED'} colorClass="bg-green-500 text-white border-green-600">Completed</StatusButton>
+                 <StatusButton active={patient.status === 'CANCELLED_BY_PATIENT'} colorClass="bg-red-600 text-white border-red-700">Cancelled</StatusButton>
               </div>
               
               {/* Detailed View Expansion */}

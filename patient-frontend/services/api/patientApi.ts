@@ -1,7 +1,6 @@
 import axiosInstance from "./axios";
 import type { ApiResponse, Patient } from "@/types";
 
-/** Shape returned by GET /patients/appointments — mirrors the legacy localStorage record. */
 export interface ApiAppointment {
   id: string; // "APT-123"
   appointment_id: string;
@@ -16,6 +15,24 @@ export interface ApiAppointment {
   patientName: string;
   relationship: string;
   personId: string;
+}
+
+/** Map API patient record → profile form state. */
+export function mapPatientToProfileForm(patient: Patient) {
+  const dobRaw = patient.dob;
+  const dob =
+    typeof dobRaw === "string"
+      ? dobRaw.includes("T")
+        ? dobRaw.split("T")[0]
+        : dobRaw
+      : "";
+  return {
+    name: patient.full_name || "",
+    phone: patient.phone || "",
+    email: patient.email || "",
+    abhaId: patient.abha_id || "",
+    dob,
+  };
 }
 
 export const patientApi = {

@@ -21,7 +21,12 @@ const api = axios.create({
 api.interceptors.request.use(
   (config) => {
     if (typeof window !== 'undefined') {
-      const token = getCookie('healthflow-admin-token');
+      const path = window.location.pathname;
+      let expectedRole = 'admin';
+      if (path.includes('/dashboard/doctor')) expectedRole = 'doctor';
+      if (path.includes('/dashboard/receptionist')) expectedRole = 'receptionist';
+      
+      const token = getCookie(`healthflow-${expectedRole}-token`);
       if (token) {
         config.headers.Authorization = `Bearer ${token}`;
       }
@@ -47,9 +52,29 @@ api.interceptors.response.use(
       return api(cfg);
     }
 
+    if (error.response?.status === 401) {
+      if (typeof window !== 'undefined') {
+        const { deleteCookie } = await import('cookies-next');
+        const path = window.location.pathname;
+        let role = 'admin';
+        if (path.includes('/dashboard/doctor')) role = 'doctor';
+        if (path.includes('/dashboard/receptionist')) role = 'receptionist';
+        deleteCookie(`healthflow-${role}-token`, { path: '/' });
+        deleteCookie(`${role}_user`, { path: '/' });
+        window.location.href = '/login';
+      }
+    }
+
     return Promise.reject(error);
   }
 );
+
+export const adminApi = {
+  async updateProfile(fullName: string) {
+    const { data } = await api.put("/auth/profile", { fullName });
+    return data;
+  }
+};
 
 export default api;
 

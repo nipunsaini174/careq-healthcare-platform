@@ -1,29 +1,22 @@
 "use client";
 import React, { useState } from 'react';
-import { Search, Filter, Phone, Mail, FileText, Activity, MoreVertical } from 'lucide-react';
+import { Search, Filter, Phone, Mail, FileText, Activity, MoreVertical, Loader2 } from 'lucide-react';
+import { usePatients } from '@/hooks/usePatients';
 
 export default function EnterprisePatientsView() {
   const [search, setSearch] = useState('');
-
-  const [patients, setPatients] = useState([
-    { id: 'PT-1042', name: 'Alexander Hamilton', phone: '+1 234-567-8901', email: 'alex@example.com', lastVisit: 'Oct 12, 2026', totalVisits: 14, doctor: 'Dr. Sarah Smith', status: 'Active', billingStatus: 'Paid' },
-    { id: 'PT-1043', name: 'Maria Garcia', phone: '+1 987-654-3210', email: 'maria.g@example.com', lastVisit: 'Sep 28, 2026', totalVisits: 3, doctor: 'Dr. Emily Chen', status: 'Active', billingStatus: 'Pending' },
-    { id: 'PT-1044', name: 'James Wilson', phone: '+1 555-123-4567', email: 'j.wilson@example.com', lastVisit: 'Today', totalVisits: 1, doctor: 'Dr. Michael Jones', status: 'In Hospital', billingStatus: 'Pending' },
-    { id: 'PT-1045', name: 'Linda Martinez', phone: '+1 444-987-6543', email: 'linda.m@example.com', lastVisit: 'Aug 05, 2026', totalVisits: 8, doctor: 'Dr. Sarah Smith', status: 'Inactive', billingStatus: 'Paid' },
-    { id: 'PT-1046', name: 'David Lee', phone: '+1 333-222-1111', email: 'david.lee@example.com', lastVisit: 'Yesterday', totalVisits: 22, doctor: 'Dr. Lisa Taylor', status: 'Active', billingStatus: 'Paid' },
-  ]);
+  const { patients, loading } = usePatients();
 
   const filteredPatients = patients.filter(p => p.name.toLowerCase().includes(search.toLowerCase()) || p.id.toLowerCase().includes(search.toLowerCase()));
 
   const handleAddPatient = () => {
-    const newId = 'PT-' + Math.floor(1000 + Math.random() * 9000);
-    const newPatient = { id: newId, name: 'New Patient ' + newId.slice(-4), phone: '+1 555-000-0000', email: 'new@example.com', lastVisit: 'Today', totalVisits: 1, doctor: 'Unassigned', status: 'Active', billingStatus: 'Pending' };
-    setPatients([newPatient, ...patients]);
+    // Usually calls an API or opens a modal, but for now we just alert
+    alert("Open Add Patient Modal (Feature to be implemented)");
   };
 
   return (
-    <div className="flex-1 overflow-y-auto bg-gray-50/50 p-8">
-      <div className="max-w-[1600px] mx-auto space-y-8 pb-12">
+    <div className="flex-1 min-w-0 overflow-x-auto overflow-y-auto bg-gray-50/50 p-4 sm:p-6 lg:p-8">
+      <div className="w-full max-w-[1600px] mx-auto min-w-0 space-y-6 pb-8 sm:space-y-8 sm:pb-12">
         
         {/* Page Header */}
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
@@ -63,6 +56,12 @@ export default function EnterprisePatientsView() {
 
         {/* Data Table */}
         <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+          {loading ? (
+            <div className="flex flex-col items-center justify-center py-24 text-gray-500">
+              <Loader2 size={32} className="animate-spin text-teal-500 mb-4" />
+              <p className="font-medium">Loading patient directory...</p>
+            </div>
+          ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm whitespace-nowrap">
               <thead className="bg-gray-50/50 border-b border-gray-100">
@@ -139,6 +138,7 @@ export default function EnterprisePatientsView() {
               </tbody>
             </table>
           </div>
+          )}
         </div>
 
       </div>

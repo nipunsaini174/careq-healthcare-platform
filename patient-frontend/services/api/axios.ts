@@ -4,9 +4,10 @@ import { getCookie } from "cookies-next";
 const getBaseUrl = () => {
   if (process.env.NEXT_PUBLIC_API_URL) return process.env.NEXT_PUBLIC_API_URL;
   if (typeof window !== "undefined") {
-    return `http://${window.location.hostname}:5000/api`;
+    const hostname = window.location.hostname === 'localhost' ? '127.0.0.1' : window.location.hostname;
+    return `http://${hostname}:5000/api`;
   }
-  return "http://localhost:5000/api";
+  return "http://127.0.0.1:5000/api";
 };
 
 export const axiosInstance = axios.create({
@@ -72,6 +73,10 @@ axiosInstance.interceptors.response.use(
         if (typeof window !== "undefined") {
           localStorage.removeItem("healthflow-access-token");
           localStorage.removeItem("healthflow-refresh-token");
+          localStorage.removeItem("user");
+          const { deleteCookie } = require("cookies-next");
+          deleteCookie("healthflow-access-token", { path: "/" });
+          deleteCookie("user", { path: "/" });
           window.location.href = "/login";
         }
       }

@@ -1,17 +1,25 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
-export function RouteGuard() {
+export function RouteGuard({ children }: { children: React.ReactNode }) {
   const router = useRouter();
+  const [isAuthorized, setIsAuthorized] = useState(false);
 
   useEffect(() => {
-    const hasToken = document.cookie.includes("healthflow-access-token=");
-    if (!hasToken) {
-      router.push("/login");
+    const hasCookie = document.cookie.includes("healthflow-access-token=");
+    const hasLocal = typeof window !== "undefined" && !!localStorage.getItem("healthflow-access-token");
+    if (!hasCookie && !hasLocal) {
+      window.location.href = "/login"; // More robust than router.push for static exports
+    } else {
+      setIsAuthorized(true);
     }
   }, [router]);
 
-  return null;
+  if (!isAuthorized) {
+    return <div className="min-h-screen bg-slate-50 dark:bg-[#0B0F14]" />; // Empty background while checking
+  }
+
+  return <>{children}</>;
 }

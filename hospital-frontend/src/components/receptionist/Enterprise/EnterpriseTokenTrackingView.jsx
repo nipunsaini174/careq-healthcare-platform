@@ -16,8 +16,8 @@ export default function EnterpriseTokenTrackingView() {
   ];
 
   return (
-    <div className="flex-1 overflow-y-auto bg-gray-50/50 p-8">
-      <div className="max-w-[1200px] mx-auto space-y-8 pb-12">
+    <div className="flex-1 min-w-0 overflow-x-auto overflow-y-auto bg-gray-50/50 p-4 sm:p-6 lg:p-8">
+      <div className="w-full max-w-[1200px] mx-auto min-w-0 space-y-6 pb-8 sm:space-y-8 sm:pb-12">
         
         {/* Page Header & Search */}
         <div className="text-center space-y-6 mb-12">

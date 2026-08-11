@@ -39,6 +39,20 @@ export class AuthController {
     }
   };
 
+  updateProfile = async (req: Request, res: Response) => {
+    try {
+      const user = (req as any).user;
+      if (!user) {
+        return res.status(401).json({ error: 'Unauthorized' });
+      }
+      const { fullName } = req.body;
+      const data = await authService.updateProfile(user.userId, fullName);
+      res.status(200).json({ message: 'Profile updated successfully', data });
+    } catch (error: any) {
+      res.status(400).json({ error: error.message });
+    }
+  };
+
   /**
    * POST /api/auth/admin-dev-token
    *

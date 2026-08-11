@@ -92,11 +92,11 @@ model doctors {
   phone                   String?                   @db.VarChar
   opd                     String?                   @db.VarChar
   schedule                String?                   @db.VarChar
-  bio                     String?                   @db.Text
-  focus                   String?                   @db.Text
-  credentials             String?                   @db.Text
+  bio                     String?
+  focus                   String?
+  credentials             String?
   room                    String?                   @db.VarChar
-  awards                  String?                   @db.Text
+  awards                  String?
   appointments            appointments[]
   consultations           consultations[]
   departments             departments               @relation(fields: [department_id], references: [department_id])
@@ -227,18 +227,18 @@ model patients {
 /// these tables without UI changes. When wiring the backend, also add a nullable
 /// `profile_id` FK on `appointments` and `lab_reports` referencing this model.
 model patient_profiles {
-  profile_id     BigInt   @id @default(autoincrement())
+  profile_id       BigInt   @id @default(autoincrement())
   /// the account owner this dependent belongs to
   owner_patient_id BigInt
-  hospital_id    BigInt
-  full_name      String   @db.VarChar
+  hospital_id      BigInt
+  full_name        String   @db.VarChar
   /// "Self", "Father", "Mother", or any user-defined custom relation
-  relationship   String   @db.VarChar
-  age            Int?
-  gender         String?  @db.VarChar
-  is_self        Boolean  @default(false)
-  created_at     DateTime @default(now())
-  patients       patients @relation(fields: [owner_patient_id], references: [patient_id])
+  relationship     String   @db.VarChar
+  age              Int?
+  gender           String?  @db.VarChar
+  is_self          Boolean  @default(false)
+  created_at       DateTime @default(now())
+  patients         patients @relation(fields: [owner_patient_id], references: [patient_id])
 
   @@index([owner_patient_id])
 }
@@ -287,6 +287,7 @@ model users {
   role          String          @db.VarChar
   status        String          @db.VarChar
   last_login    DateTime?
+  phone         String?         @db.VarChar
   admins        admins?
   doctors       doctors?
   notifications notifications[]

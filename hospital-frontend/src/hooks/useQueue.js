@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import api from '../services/api';
+import { useSocket } from '../contexts/SocketContext';
 
 export function useQueue() {
   const [queue, setQueue] = useState([]);
@@ -25,7 +26,8 @@ export function useQueue() {
           doctorName: a.doctorName,
           department: a.department,
           currentScore: (a.token.queuePosition || 1) * 10
-        }));
+        }))
+        .reverse(); // Display in FIFO order (oldest first)
 
       setQueue(mappedQueue);
     } catch (err) {
@@ -35,12 +37,29 @@ export function useQueue() {
     }
   };
 
+  const { socket } = useSocket();
+
   useEffect(() => {
     fetchQueue();
-    // In a real app, you would set up an interval or socket listener here
+
+    // Fallback: refresh every 30s in case socket misses an event or connection drops
     const interval = setInterval(fetchQueue, 30000);
-    return () => clearInterval(interval);
-  }, []);
+    
+    if (!socket) {
+      return () => clearInterval(interval);
+    }
+    
+    socket.on('queue_updated', fetchQueue);
+    socket.on('appointment_created', fetchQueue);
+    socket.on('appointment_updated', fetchQueue);
+    
+    return () => {
+      clearInterval(interval);
+      socket.off('queue_updated', fetchQueue);
+      socket.off('appointment_created', fetchQueue);
+      socket.off('appointment_updated', fetchQueue);
+    };
+  }, [socket]);
 
   const addToken = () => {
     // This should ideally call a backend endpoint to generate a token
@@ -57,7 +76,17 @@ export function useQueue() {
     // Note: To fully implement, we need a backend endpoint for this.
   };
 
-  return { queue, loading, addToken, updateTokenStatus, refreshQueue: fetchQueue };
+  const removeToken = async (tokenId) => {
+    try {
+      await api.delete(`/receptionist/queue/${tokenId}`);
+      // Optimistic update
+      setQueue(prev => prev.filter(token => token.id !== tokenId));
+    } catch (err) {
+      console.error('Failed to remove token:', err);
+    }
+  };
+
+  return { queue, loading, addToken, updateTokenStatus, removeToken, refreshQueue: fetchQueue };
 }
 
 function mapStatus(status) {
@@ -68,6 +97,7 @@ function mapStatus(status) {
     case 'in progress':
     case 'in consultation': return 'IN_CONSULTATION';
     case 'completed': return 'COMPLETED';
+    case 'cancelled': return 'CANCELLED_BY_PATIENT';
     default: return 'WAITING';
   }
 }

@@ -18,14 +18,12 @@ export default function DashboardPage() {
       <KpiCards />
 
       {/* Main Workspace: 70/30 Split */}
-      <div className="grid grid-cols-10 gap-8">
-        {/* Left Column: Primary Operational Workspace */}
-        <div className="col-span-7 flex flex-col gap-8">
+      <div className="grid grid-cols-1 gap-4 xl:grid-cols-10 xl:gap-6 2xl:gap-8">
+        <div className="flex flex-col gap-4 xl:col-span-7 xl:gap-6 2xl:gap-8">
           <ReceptionistTable />
         </div>
 
-        {/* Right Column: Live Context */}
-        <div className="col-span-3">
+        <div className="xl:col-span-3">
           <QueueSidebar />
         </div>
       </div>

@@ -30,4 +30,22 @@ api.interceptors.request.use(
   }
 );
 
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      if (typeof window !== "undefined") {
+        localStorage.removeItem("healthflow-access-token");
+        localStorage.removeItem("healthflow-refresh-token");
+        localStorage.removeItem("user");
+        const { deleteCookie } = require("cookies-next");
+        deleteCookie("healthflow-access-token", { path: "/" });
+        deleteCookie("user", { path: "/" });
+        window.location.href = "/login";
+      }
+    }
+    return Promise.reject(error);
+  }
+);
+
 export default api;

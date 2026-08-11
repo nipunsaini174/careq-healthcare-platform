@@ -73,6 +73,21 @@ export class PatientController {
             email: userData.email,
           }
         });
+        safeEmit('patient_created', {
+          id: patient.uhid,
+          name: patient.full_name,
+          age: patient.age.toString(),
+          gender: patient.gender,
+          blood: patient.blood_group,
+          dept: 'General',
+          doctor: 'Not Assigned',
+          status: patient.patient_status,
+          condition: 'Stable',
+          phone: patient.phone || 'N/A',
+          email: patient.email || 'N/A',
+          address: 'Not Provided',
+          admitted: new Date().toISOString(),
+        });
       }
 
       res.status(200).json({ data: patient });
@@ -89,56 +104,67 @@ export class PatientController {
         return res.status(401).json({ error: 'Unauthorized' });
       }
 
-      const { name, phone, email, dob, abhaId } = req.body;
+      const body = req.body ?? {};
+      // Accept both camelCase and snake_case from clients
+      const name = body.name ?? body.full_name;
+      const phone = body.phone;
+      const email = body.email;
+      const dob = body.dob;
+      const abhaId = body.abhaId ?? body.abha_id;
 
       let patient = await prisma.patients.findFirst({
         where: { user_id: BigInt(user.userId) }
       });
 
       if (!patient) {
-        // Auto-heal: Create a patient record if it doesn't exist for this user
         const userData = await prisma.users.findUnique({ where: { user_id: BigInt(user.userId) } });
         if (!userData) {
           return res.status(404).json({ error: 'User not found' });
         }
-        
+
         patient = await prisma.patients.create({
           data: {
             user_id: userData.user_id,
             hospital_id: userData.hospital_id,
             uhid: `UHID-${Date.now().toString().slice(-6)}`,
-            full_name: userData.full_name,
+            full_name: name?.trim() || userData.full_name,
             age: 0,
             gender: 'Not Specified',
             blood_group: 'Unknown',
             billing_status: 'Unpaid',
             patient_status: 'Active',
-            email: userData.email,
+            email: email ?? userData.email,
+            phone: phone ?? userData.phone ?? null,
+            dob: dob ?? null,
+            abha_id: abhaId ?? null,
+          }
+        });
+      } else {
+        patient = await prisma.patients.update({
+          where: { patient_id: patient.patient_id },
+          data: {
+            ...(name !== undefined ? { full_name: String(name).trim() } : {}),
+            ...(phone !== undefined ? { phone: phone || null } : {}),
+            ...(email !== undefined ? { email: email || null } : {}),
+            ...(dob !== undefined ? { dob: dob || null } : {}),
+            ...(abhaId !== undefined ? { abha_id: abhaId || null } : {}),
           }
         });
       }
 
-      const updatedPatient = await prisma.patients.update({
-        where: { patient_id: patient.patient_id },
+      // Keep linked users row in sync
+      await prisma.users.update({
+        where: { user_id: BigInt(user.userId) },
         data: {
-          full_name: name !== undefined ? name : patient.full_name,
-          phone: phone !== undefined ? phone : patient.phone,
-          email: email !== undefined ? email : patient.email,
-          dob: dob !== undefined ? dob : patient.dob,
-          abha_id: abhaId !== undefined ? abhaId : patient.abha_id,
-        }
+          ...(name !== undefined ? { full_name: String(name).trim() } : {}),
+          ...(email !== undefined ? { email: email || undefined } : {}),
+          ...(phone !== undefined ? { phone: phone || null } : {}),
+        },
       });
 
-      // Also update the full_name in users table to keep it in sync
-      if (name !== undefined) {
-        await prisma.users.update({
-          where: { user_id: BigInt(user.userId) },
-          data: { full_name: name }
-        });
-      }
-
-      res.status(200).json({ data: updatedPatient, message: 'Profile updated successfully' });
+      res.status(200).json({ data: patient, message: 'Profile updated successfully' });
     } catch (error: any) {
+      console.error('[PATCH /patients/profile]', error?.message || error);
       res.status(500).json({ error: error.message });
     }
   }
@@ -354,6 +380,21 @@ export class PatientController {
               phone: patient.phone,
             }
           });
+          safeEmit('patient_created', {
+            id: dependent.uhid,
+            name: dependent.full_name,
+            age: dependent.age.toString(),
+            gender: dependent.gender,
+            blood: dependent.blood_group,
+            dept: 'General',
+            doctor: 'Not Assigned',
+            status: dependent.patient_status,
+            condition: 'Stable',
+            phone: dependent.phone || 'N/A',
+            email: dependent.email || 'N/A',
+            address: 'Not Provided',
+            admitted: new Date().toISOString(),
+          });
         }
         targetPatient = dependent;
       }
@@ -508,9 +549,10 @@ export class PatientController {
 
       // Find doctor by name or fallback to first doctor in the hospital
       let doc = await prisma.doctors.findFirst({
-        where: { hospital_id: hospitalId, users: { full_name: { contains: doctor, mode: 'insensitive' } } }
+        where: { hospital_id: hospitalId, users: { full_name: { contains: doctor, mode: 'insensitive' } } },
+        include: { users: true, departments: true }
       });
-      if (!doc) doc = await prisma.doctors.findFirst({ where: { hospital_id: hospitalId } });
+      if (!doc) doc = await prisma.doctors.findFirst({ where: { hospital_id: hospitalId }, include: { users: true, departments: true } });
       if (!doc) {
         return res.status(400).json({ error: 'No doctors available in the system.' });
       }
@@ -529,6 +571,21 @@ export class PatientController {
           phone: phone || null,
           email: email || null,
         }
+      });
+      safeEmit('patient_created', {
+        id: newPatient.uhid,
+        name: newPatient.full_name,
+        age: newPatient.age.toString(),
+        gender: newPatient.gender,
+        blood: newPatient.blood_group,
+        dept: doc?.departments?.department_name || 'General',
+        doctor: doc?.users?.full_name || 'Not Assigned',
+        status: newPatient.patient_status,
+        condition: 'Stable',
+        phone: newPatient.phone || 'N/A',
+        email: newPatient.email || 'N/A',
+        address: 'Not Provided',
+        admitted: new Date().toISOString(),
       });
 
       res.status(201).json({ success: true, data: newPatient });

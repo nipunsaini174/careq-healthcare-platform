@@ -12,13 +12,16 @@ import {
   Activity, 
   FileBarChart, 
   BellRing, 
-  Settings 
+  Settings,
+  X,
 } from 'lucide-react';
 
 import { SidebarBrand } from '@/components/shared/SidebarBrand';
+import { useReceptionistProfile } from '@/contexts/ReceptionistProfileContext';
 
-export default function EnterpriseSidebar() {
+export default function EnterpriseSidebar({ open = false, onClose = () => {} }) {
   const pathname = usePathname();
+  const { displayName, displayRole, initials, loading } = useReceptionistProfile();
 
   const navItems = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, href: '/dashboard/receptionist' },
@@ -33,13 +36,27 @@ export default function EnterpriseSidebar() {
   ];
 
   return (
-    <aside className="w-[260px] h-screen bg-white dark:bg-[#0F172A] border-r border-gray-100 dark:border-[#1E293B] flex flex-col flex-shrink-0 font-sans transition-colors duration-200">
-      {/* Logo Area */}
-      <SidebarBrand appName="MediCore" role="RECEPTION DESK" />
+    <aside
+      className={`
+        fixed inset-y-0 left-0 z-50 flex w-[min(280px,88vw)] shrink-0 flex-col border-r border-gray-100 bg-white font-sans transition-transform duration-200 dark:border-[#1E293B] dark:bg-[#0F172A]
+        lg:static lg:z-auto lg:translate-x-0 lg:w-64 xl:w-[260px]
+        ${open ? 'translate-x-0' : '-translate-x-full'}
+      `}
+    >
+      <div className="flex items-center justify-between lg:block">
+        <SidebarBrand appName="MediCore" role="RECEPTION DESK" />
+        <button
+          type="button"
+          aria-label="Close navigation"
+          onClick={onClose}
+          className="mr-3 rounded-lg p-2 text-gray-500 hover:bg-gray-100 lg:hidden"
+        >
+          <X size={20} />
+        </button>
+      </div>
 
-      {/* Navigation */}
-      <nav className="flex-1 overflow-y-auto py-6 px-4 space-y-1">
-        <p className="text-gray-400 dark:text-slate-500 text-xs font-bold uppercase tracking-wider mb-4 px-2 transition-colors duration-200">Main Menu</p>
+      <nav className="flex-1 space-y-1 overflow-y-auto px-3 py-4 sm:px-4 sm:py-6">
+        <p className="mb-4 px-2 text-xs font-bold uppercase tracking-wider text-gray-400 dark:text-slate-500">Main Menu</p>
         
         {navItems.map(item => {
           const Icon = item.icon;
@@ -49,31 +66,35 @@ export default function EnterpriseSidebar() {
             <Link
               href={item.href}
               key={item.id}
-              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all text-sm font-medium ${
+              onClick={onClose}
+              className={`flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all ${
                 isActive 
-                  ? 'bg-green-50 dark:bg-teal-500/10 text-green-600 dark:text-teal-400 font-semibold' 
-                  : 'text-gray-600 dark:text-slate-400 hover:bg-gray-50 dark:hover:bg-slate-800/50 hover:text-gray-900 dark:hover:text-slate-200'
+                  ? 'bg-green-50 font-semibold text-green-600 dark:bg-teal-500/10 dark:text-teal-400' 
+                  : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900 dark:text-slate-400 dark:hover:bg-slate-800/50 dark:hover:text-slate-200'
               }`}
             >
               <Icon size={18} className={isActive ? 'text-green-600 dark:text-teal-400' : 'text-gray-500 dark:text-slate-500'} />
-              {item.label}
+              <span className="truncate">{item.label}</span>
               {isActive && (
-                <div className="ml-auto w-1.5 h-1.5 rounded-full bg-green-500 dark:bg-teal-400 shadow-[0_0_8px_rgba(34,197,94,0.6)] dark:shadow-[0_0_8px_rgba(45,212,191,0.8)]" />
+                <div className="ml-auto h-1.5 w-1.5 shrink-0 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)] dark:bg-teal-400" />
               )}
             </Link>
           );
         })}
       </nav>
 
-      {/* User Mini Profile */}
-      <div className="p-4 border-t border-gray-100 dark:border-[#1E293B] transition-colors duration-200">
-        <div className="flex items-center gap-3 p-3 rounded-xl bg-gray-50 dark:bg-slate-800/50 border border-gray-100 dark:border-slate-700/50 transition-colors duration-200">
-          <div className="w-9 h-9 rounded-full bg-green-600 dark:bg-teal-600 flex items-center justify-center text-white font-bold text-sm transition-colors duration-200">
-            JD
+      <div className="border-t border-gray-100 p-3 dark:border-[#1E293B] sm:p-4">
+        <div className="flex items-center gap-3 rounded-xl border border-gray-100 bg-gray-50 p-3 dark:border-slate-700/50 dark:bg-slate-800/50">
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-green-600 text-sm font-bold text-white dark:bg-teal-600">
+            {loading ? '…' : initials}
           </div>
-          <div className="flex-1 overflow-hidden">
-            <p className="text-sm font-semibold text-gray-800 dark:text-white truncate transition-colors duration-200">Jane Doe</p>
-            <p className="text-xs text-gray-500 dark:text-slate-400 truncate transition-colors duration-200">Head Receptionist</p>
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-sm font-semibold text-gray-800 dark:text-white">
+              {loading ? 'Loading...' : displayName}
+            </p>
+            <p className="truncate text-xs text-gray-500 dark:text-slate-400">
+              {displayRole}
+            </p>
           </div>
         </div>
       </div>

@@ -1,6 +1,7 @@
 import jwt from 'jsonwebtoken';
 import { prisma } from '../prisma/client.js';
 import { supabase, supabaseAdmin } from '../config/supabase.js';
+import { safeEmit } from '../sockets/emit.js';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'supersecretjwtkey_change_me';
 
@@ -96,7 +97,7 @@ export class AuthService {
 
     if (role === 'patient') {
       // Also create a linked patient record
-      await prisma.patients.create({
+      const newPat = await prisma.patients.create({
         data: {
           hospital_id: user.hospital_id,
           // primary_doctor_id stays null on signup — a primary doctor is
@@ -116,6 +117,22 @@ export class AuthService {
           user_id: user.user_id,
           email: user.email,
         }
+      });
+
+      safeEmit('patient_created', {
+        id: newPat.uhid,
+        name: newPat.full_name,
+        age: newPat.age.toString(),
+        gender: newPat.gender,
+        blood: newPat.blood_group,
+        dept: 'General',
+        doctor: 'Not Assigned',
+        status: newPat.patient_status,
+        condition: 'Stable',
+        phone: newPat.phone || 'N/A',
+        email: newPat.email || 'N/A',
+        address: 'Not Provided',
+        admitted: new Date().toISOString(),
       });
     }
 
@@ -212,6 +229,22 @@ export class AuthService {
     const { password_hash: _, ...userWithoutPassword } = user;
 
     return { user: userWithoutPassword, token };
+  }
+
+  async updateProfile(userId: number, fullName: string) {
+    if (!fullName) {
+      throw new Error('Full name is required');
+    }
+    const updated = await prisma.users.update({
+      where: { user_id: BigInt(userId) },
+      data: { full_name: fullName },
+    });
+    return {
+      user_id: String(updated.user_id),
+      email: updated.email,
+      full_name: updated.full_name,
+      role: updated.role,
+    };
   }
 
   async signOut() {

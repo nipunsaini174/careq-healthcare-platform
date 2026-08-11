@@ -1,88 +1,56 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "motion/react";
-import { Calendar, Clock, FileText, Bell, AlertCircle } from "lucide-react";
+import { Calendar, Clock, FileText, Bell, AlertCircle, Info, AlertTriangle } from "lucide-react";
+import api from "@/services/api/axios";
 
-type NotificationType = "All" | "Appointments" | "Queue" | "Reports";
+type NotificationType = "All" | "Appointments" | "Queue" | "Reports" | "Broadcast";
 
 export default function Notifications() {
   const [activeTab, setActiveTab] = useState<NotificationType>("All");
+  const [notifications, setNotifications] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const notifications = [
-    {
-      id: 1,
-      type: "Appointments",
-      icon: Calendar,
-      title: "Appointment Reminder",
-      message: "You have an appointment tomorrow at 10:30 AM with Dr. Sarah Johnson",
-      time: "2 hours ago",
-      read: false,
-      color: "blue",
-    },
-    {
-      id: 2,
-      type: "Queue",
-      icon: Clock,
-      title: "Your Turn is Coming",
-      message: "Only 1 patient ahead of you. Please be ready.",
-      time: "5 minutes ago",
-      read: false,
-      color: "purple",
-    },
-    {
-      id: 3,
-      type: "Queue",
-      icon: AlertCircle,
-      title: "Doctor Running Late",
-      message: "Dr. Sarah Johnson is running 15 minutes behind schedule.",
-      time: "30 minutes ago",
-      read: false,
-      color: "orange",
-    },
-    {
-      id: 4,
-      type: "Reports",
-      icon: FileText,
-      title: "Lab Report Ready",
-      message: "Your blood test results are now available to view and download.",
-      time: "1 hour ago",
-      read: false,
-      color: "green",
-    },
-    {
-      id: 5,
-      type: "Appointments",
-      icon: Calendar,
-      title: "Appointment Confirmed",
-      message: "Your appointment on June 17 has been confirmed.",
-      time: "3 hours ago",
-      read: true,
-      color: "blue",
-    },
-    {
-      id: 6,
-      type: "Queue",
-      icon: Bell,
-      title: "Token Called",
-      message: "Token T-142 has been called. Please proceed to Room 3A.",
-      time: "Yesterday",
-      read: true,
-      color: "purple",
-    },
-    {
-      id: 7,
-      type: "Reports",
-      icon: FileText,
-      title: "Prescription Available",
-      message: "Dr. Michael Chen has uploaded your prescription.",
-      time: "2 days ago",
-      read: true,
-      color: "green",
-    },
-  ];
+  useEffect(() => {
+    const fetchNotifications = async () => {
+      try {
+        const res = await api.get("/notifications");
+        const formatted = res.data.map((n: any) => {
+          let type = "Broadcast";
+          let icon = Bell;
+          
+          if (n.category?.toLowerCase() === "appointment") { type = "Appointments"; icon = Calendar; }
+          else if (n.category?.toLowerCase() === "queue") { type = "Queue"; icon = Clock; }
+          else if (n.category?.toLowerCase() === "report") { type = "Reports"; icon = FileText; }
+          
+          let color = "blue";
+          if (n.severity === "warning") { color = "orange"; icon = AlertTriangle; }
+          else if (n.severity === "emergency") { color = "red"; icon = AlertCircle; }
+          else if (n.severity === "info") { color = "blue"; icon = Info; }
 
-  const tabs: NotificationType[] = ["All", "Appointments", "Queue", "Reports"];
+          return {
+            id: n.notification_id,
+            type,
+            icon,
+            title: n.title,
+            message: n.message,
+            time: new Date(n.created_at).toLocaleString(),
+            read: n.is_read,
+            color,
+          };
+        });
+        setNotifications(formatted);
+      } catch (error) {
+        console.error("Failed to load notifications:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchNotifications();
+  }, []);
+
+  const tabs: NotificationType[] = ["All", "Appointments", "Queue", "Reports", "Broadcast"];
 
   const filteredNotifications =
     activeTab === "All"
@@ -99,6 +67,8 @@ export default function Notifications() {
         return "bg-orange-50 text-orange-600 dark:bg-orange-500/15 dark:text-orange-400";
       case "green":
         return "bg-green-50 text-green-600 dark:bg-emerald-500/15 dark:text-emerald-400";
+      case "red":
+        return "bg-red-50 text-red-600 dark:bg-red-500/15 dark:text-red-400";
       default:
         return "bg-gray-50 text-gray-600 dark:bg-[#223040] dark:text-[#94A3B8]";
     }
@@ -119,7 +89,7 @@ export default function Notifications() {
       </div>
 
       {/* Tabs */}
-      <div className="px-6 py-4 overflow-x-auto">
+      <div className="px-6 py-4 overflow-x-auto scrollbar-hide">
         <div className="flex gap-2">
           {tabs.map((tab) => (
             <button
@@ -139,7 +109,11 @@ export default function Notifications() {
 
       {/* Notifications List */}
       <div className="px-6 pb-6">
-        {filteredNotifications.length > 0 ? (
+        {loading ? (
+          <div className="flex justify-center items-center py-12">
+             <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-teal-500"></div>
+          </div>
+        ) : filteredNotifications.length > 0 ? (
           <div className="space-y-3">
             {filteredNotifications.map((notification, index) => {
               const Icon = notification.icon;

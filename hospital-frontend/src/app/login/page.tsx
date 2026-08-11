@@ -28,11 +28,11 @@ export default function LoginPage() {
       }
 
       if (selectedRole === "ADMIN") {
-        router.push("/dashboard/admin");
+        window.location.href = "/dashboard/admin";
       } else if (selectedRole === "RECEPTIONIST") {
-        router.push("/dashboard/receptionist");
+        window.location.href = "/dashboard/receptionist";
       } else {
-        router.push("/dashboard/doctor");
+        window.location.href = "/dashboard/doctor";
       }
     } catch (err: any) {
       setError(err.response?.data?.error || err.message || "An error occurred during login.");
