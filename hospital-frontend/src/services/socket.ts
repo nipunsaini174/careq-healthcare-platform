@@ -8,15 +8,11 @@ class SocketService {
   connect() {
     if (!this.socket) {
       this.socket = io(URL, {
-        transports: ['websocket', 'polling'], // polling as fallback
-        autoConnect: true,
-        // ── Reconnection — without these, a network blip kills all live
-        // updates silently until the receptionist manually refreshes ──────
+        transports: ['websocket', 'polling'],
+        autoConnect: false, // Don't auto-connect endlessly if backend is offline
         reconnection: true,
-        reconnectionAttempts: Infinity,
-        reconnectionDelay: 1000,       // 1 s first retry
-        reconnectionDelayMax: 10000,   // cap at 10 s
-        randomizationFactor: 0.3,      // jitter to avoid thundering-herd
+        reconnectionAttempts: 3, // Cap attempts to 3
+        reconnectionDelay: 2000,
       });
 
       this.socket.on('connect', () => {
@@ -27,17 +23,17 @@ class SocketService {
         console.log('[Hospital] Socket disconnected:', reason);
       });
 
-      this.socket.on('connect_error', (err) => {
-        console.warn('[Hospital] Socket connect error:', err.message);
+      this.socket.on('connect_error', () => {
+        // Silently handled when backend offline
       });
+    }
 
-      // Re-join the receptionist room after every reconnect so events
-      // keep flowing even if the server restarted and cleared the room.
-      this.socket.on('reconnect', () => {
-        console.log('[Hospital] Socket reconnected — rejoining rooms');
-        // The SocketContext will call joinRoom after re-auth; we just
-        // log here so it's easy to trace in the network tab.
-      });
+    try {
+      if (!this.socket.connected) {
+        this.socket.connect();
+      }
+    } catch {
+      // Ignored
     }
   }
 
@@ -65,4 +61,3 @@ export const getSocket = () => {
 export const disconnectSocket = () => {
   socketService.disconnect();
 };
-

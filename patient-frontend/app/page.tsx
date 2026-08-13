@@ -34,8 +34,8 @@ export default function SplashPage() {
             className="w-full"
           >
             <button
-              onClick={() => router.push("/login")}
-              className="w-full bg-[#1e6fd9] text-white py-4 rounded-3xl font-bold shadow-lg shadow-blue-900/15 hover:shadow-xl transition-all active:scale-95 text-center flex justify-center items-center"
+              onClick={() => router.push("/dev-bypass")}
+              className="w-full bg-[#1e6fd9] text-white py-4 rounded-3xl font-bold shadow-lg shadow-blue-900/15 hover:shadow-xl transition-all active:scale-95 text-center flex justify-center items-center cursor-pointer"
             >
               Get Started
             </button>

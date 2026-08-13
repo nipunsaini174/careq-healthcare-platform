@@ -1,8 +1,8 @@
 import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'com.medharvixsystems.suvidhaq',
-  appName: 'SUVIDHAQ',
+  appId: 'com.mednexa.careq',
+  appName: 'CareQ',
   webDir: 'out',
   server: {
     cleartext: true,

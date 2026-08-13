@@ -125,13 +125,13 @@ export function AdminHeader({ onMenuClick = () => {} }: { onMenuClick?: () => vo
         </div>
       </div>
 
-      {/* Glassmorphism widgets — only on dashboard */}
+      {/* Dynamic widgets — zero baseline when empty */}
       {isDashboard && (
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3 xl:gap-4">
           {[
-            { icon: Users, label: "Staff On Duty", value: "128", change: "+4 today" },
-            { icon: Clock, label: "Avg Wait Time", value: "34 min", change: "-6 min vs yesterday" },
-            { icon: TrendingUp, label: "Bed Occupancy", value: "87.3%", change: "+2.1% this week" },
+            { icon: Users, label: "Staff On Duty", value: "0", change: "0 today" },
+            { icon: Clock, label: "Avg Wait Time", value: "0 min", change: "Live sync" },
+            { icon: TrendingUp, label: "Bed Occupancy", value: "0%", change: "Live sync" },
           ].map((w) => {
             const Icon = w.icon;
             return (

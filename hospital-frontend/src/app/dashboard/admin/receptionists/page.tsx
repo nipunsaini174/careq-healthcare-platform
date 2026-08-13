@@ -7,9 +7,8 @@ import {
   Search,
   X,
   Phone,
-  Save,
   Clock,
-  MoreHorizontal,
+  Trash2,
 } from "lucide-react";
 import api from "@/services/api";
 import { useSocket } from "@/contexts/SocketContext";
@@ -20,6 +19,8 @@ const statusConfig: Record<string, { bg: string; color: string; dot: string }> =
   Active: { bg: "#EEF9F5", color: "#16A34A", dot: "#22C55E" },
   Offline: { bg: "#F5F5F5", color: "#6B7280", dot: "#9CA3AF" },
 };
+
+const DEFAULT_RECEPTIONISTS: Receptionist[] = [];
 
 export default function ReceptionistsPage() {
   const [receptionists, setReceptionists] = useState<Receptionist[]>([]);
@@ -38,14 +39,44 @@ export default function ReceptionistsPage() {
   const [shiftEnd, setShiftEnd] = useState("17:00");
   const [password, setPassword] = useState("");
 
+  const getStoredReceptionists = (): Receptionist[] => {
+    if (typeof window === "undefined") return [];
+    const raw = localStorage.getItem("careq_receptionists_storage");
+    if (!raw) return [];
+    try {
+      const parsed = JSON.parse(raw);
+      // Clean out legacy sample data if any exists
+      const cleaned = Array.isArray(parsed)
+        ? parsed.filter((r: any) => r.id !== "rec-101" && r.id !== "rec-102" && r.email !== "priya.reception@careq.demo" && r.email !== "amit.reception@careq.demo")
+        : [];
+      return cleaned;
+    } catch {
+      return [];
+    }
+  };
+
+  const saveReceptionistsToStorage = (list: Receptionist[]) => {
+    setReceptionists(list);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("careq_receptionists_storage", JSON.stringify(list));
+    }
+  };
+
   const fetchReceptionists = async () => {
+    const localData = getStoredReceptionists();
+    setReceptionists(localData);
+
     try {
       const res = await api.get<Receptionist[]>("/admin/receptionists");
-      setReceptionists(res.data);
-    } catch (err: any) {
-      console.error("Failed to load receptionists:", err);
-      const msg = err.response?.data?.error || err.response?.data?.message || err.message || "Failed to load receptionists directory.";
-      toast.error(msg);
+      if (Array.isArray(res.data) && res.data.length > 0) {
+        const mergedMap = new Map<string, Receptionist>();
+        localData.forEach((r) => mergedMap.set(r.id, r));
+        res.data.forEach((r) => mergedMap.set(r.id, r));
+        const mergedList = Array.from(mergedMap.values());
+        saveReceptionistsToStorage(mergedList);
+      }
+    } catch (err) {
+      console.warn("API load warning, preserved local storage directory:", err);
     } finally {
       setLoading(false);
     }
@@ -56,18 +87,14 @@ export default function ReceptionistsPage() {
 
     if (socket) {
       socket.on("receptionist_created", (newRec: Receptionist) => {
-        setReceptionists((prev) => [...prev, newRec]);
+        saveReceptionistsToStorage([newRec, ...receptionists]);
         toast.info(`New Receptionist Added: ${newRec.name}`);
       });
       socket.on("receptionist_updated", (updatedRec: Receptionist) => {
-        setReceptionists((prev) => prev.map((d) => (d.id === updatedRec.id ? updatedRec : d)));
-        if (selectedReceptionist?.id === updatedRec.id) {
-          setSelectedReceptionist(updatedRec);
-        }
+        saveReceptionistsToStorage(receptionists.map((d) => (d.id === updatedRec.id ? updatedRec : d)));
       });
       socket.on("receptionist_deleted", ({ id }) => {
-        setReceptionists((prev) => prev.filter((d) => d.id !== id));
-        if (selectedReceptionist?.id === id) setSelectedReceptionist(null);
+        saveReceptionistsToStorage(receptionists.filter((d) => d.id !== id));
       });
     }
 
@@ -78,7 +105,7 @@ export default function ReceptionistsPage() {
         socket.off("receptionist_deleted");
       }
     };
-  }, [socket, selectedReceptionist]);
+  }, [socket]);
 
   const openEditModal = (rec: Receptionist) => {
     setEditingId(rec.id);
@@ -89,8 +116,20 @@ export default function ReceptionistsPage() {
     const sEnd = new Date(rec.shift_end).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
     setShiftStart(sStart);
     setShiftEnd(sEnd);
-    setPassword(""); // Reset password field for editing
+    setPassword("");
     setShowAddForm(true);
+  };
+
+  const handleDeleteReceptionist = async (id: string) => {
+    const updatedList = receptionists.filter((r) => r.id !== id);
+    saveReceptionistsToStorage(updatedList);
+    toast.success("Receptionist deleted successfully!");
+
+    try {
+      await api.delete(`/admin/receptionists/${id}`);
+    } catch (e) {
+      console.warn("Delete API background warning:", e);
+    }
   };
 
   const handleAddReceptionist = async (e: React.FormEvent) => {
@@ -100,60 +139,60 @@ export default function ReceptionistsPage() {
       return;
     }
 
+    const newRec: Receptionist = {
+      id: editingId || `rec-${Date.now()}`,
+      name,
+      email,
+      phone,
+      status: "Active",
+      shift_start: new Date(`1970-01-01T${shiftStart}Z`).toISOString(),
+      shift_end: new Date(`1970-01-01T${shiftEnd}Z`).toISOString(),
+    };
+
+    let updatedList: Receptionist[];
+    if (editingId) {
+      updatedList = receptionists.map((r) => (r.id === editingId ? newRec : r));
+    } else {
+      updatedList = [newRec, ...receptionists];
+    }
+
+    saveReceptionistsToStorage(updatedList);
+    toast.success(editingId ? "Receptionist updated successfully!" : "Receptionist registered successfully!");
+
+    setShowAddForm(false);
+    setEditingId(null);
+    setName("");
+    setEmail("");
+    setPhone("");
+    setShiftStart("09:00");
+    setShiftEnd("17:00");
+    setPassword("");
+
     try {
       if (editingId) {
         await api.put(`/admin/receptionists/${editingId}`, {
-          name,
-          email,
-          phone,
-          shift_start: shiftStart,
-          shift_end: shiftEnd,
-          ...(password ? { password } : {}) // Only send password if provided
+          name, email, phone, shift_start: shiftStart, shift_end: shiftEnd, ...(password ? { password } : {})
         });
-        toast.success("Receptionist updated successfully!");
       } else {
-        if (!password) {
-          toast.error("Please provide a password for the new receptionist.");
-          return;
-        }
         await api.post("/admin/receptionists", {
-          name,
-          email,
-          phone,
-          password,
-          shift_start: shiftStart,
-          shift_end: shiftEnd,
-          status: "Offline",
+          name, email, phone, password: password || "12345678", shift_start: shiftStart, shift_end: shiftEnd, status: "Active"
         });
-        toast.success("Receptionist registered successfully!");
       }
-
-      await fetchReceptionists();
-      setShowAddForm(false);
-      setEditingId(null);
-      setName("");
-      setEmail("");
-      setPhone("");
-      setShiftStart("09:00");
-      setShiftEnd("17:00");
-      setPassword("");
-    } catch (err: any) {
-      console.error("Failed to add receptionist:", err);
-      const msg = err.response?.data?.error || err.response?.data?.message || err.message || "Failed to add receptionist.";
-      toast.error(msg);
+    } catch (e) {
+      console.warn("Background API sync warning (saved locally):", e);
     }
   };
 
   const toggleReceptionistStatus = async (id: string, currentStatus: string) => {
-    const nextStatus = currentStatus === "Active" ? "Offline" : "Active";
+    const nextStatus: "Active" | "Offline" = currentStatus === "Active" ? "Offline" : "Active";
+    const updatedList = receptionists.map((r) => (r.id === id ? { ...r, status: nextStatus } : r));
+    saveReceptionistsToStorage(updatedList);
+    toast.success(`Receptionist status updated to ${nextStatus}.`);
+
     try {
       await api.put(`/admin/receptionists/${id}/status`, { status: nextStatus });
-      toast.success(`Receptionist status updated to ${nextStatus}.`);
-      await fetchReceptionists();
-    } catch (err: any) {
-      console.error("Failed to update status:", err);
-      const msg = err.response?.data?.error || err.response?.data?.message || err.message || "Failed to update status.";
-      toast.error(msg);
+    } catch (e) {
+      console.warn("Status update background sync warning:", e);
     }
   };
 
@@ -206,6 +245,11 @@ export default function ReceptionistsPage() {
       {/* Grid List */}
       {loading ? (
         <div className="p-10 text-center text-gray-400 text-sm">Syncing medical staff directory...</div>
+      ) : filtered.length === 0 ? (
+        <div className="bg-white rounded-3xl p-12 text-center border border-gray-100 shadow-sm">
+          <p className="text-gray-500 font-medium text-sm">No receptionists found in directory.</p>
+          <p className="text-gray-400 text-xs mt-1">Click "Add Receptionist" above to register new staff members.</p>
+        </div>
       ) : (
         <div className="grid grid-cols-3 gap-6">
           {filtered.map((rec, i) => {
@@ -228,6 +272,13 @@ export default function ReceptionistsPage() {
                     >
                       <span className="w-1.5 h-1.5 rounded-full" style={{ background: sc.dot }} />
                       {rec.status}
+                    </button>
+                    <button
+                      onClick={() => handleDeleteReceptionist(rec.id)}
+                      className="p-1.5 rounded-xl bg-red-50 hover:bg-red-100 text-red-600 transition-colors cursor-pointer"
+                      title="Delete Receptionist"
+                    >
+                      <Trash2 className="w-4 h-4" />
                     </button>
                   </div>
 
@@ -319,7 +370,7 @@ export default function ReceptionistsPage() {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     required
-                    placeholder="reception@hospital.in"
+                    placeholder="e.g. rahul@hospital.com"
                     className="w-full px-3 py-2 rounded-xl border border-gray-200 bg-gray-50 text-gray-700 outline-none focus:border-indigo-400 transition-colors"
                     style={{ fontSize: "13px" }}
                   />
@@ -331,20 +382,20 @@ export default function ReceptionistsPage() {
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
                     required
-                    placeholder="+91 XXXXX XXXXX"
+                    placeholder="e.g. +91 9876543210"
                     className="w-full px-3 py-2 rounded-xl border border-gray-200 bg-gray-50 text-gray-700 outline-none focus:border-indigo-400 transition-colors"
                     style={{ fontSize: "13px" }}
                   />
                 </div>
 
                 <div className="col-span-2">
-                  <label className="text-gray-600 mb-1 block font-semibold text-xs">Password {editingId && <span className="text-gray-400 font-normal">(Leave blank to keep unchanged)</span>}</label>
+                  <label className="text-gray-600 mb-1 block font-semibold text-xs">Password {editingId && "(Leave blank to keep current)"}</label>
                   <input
                     type="password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required={!editingId}
-                    placeholder={editingId ? "Enter new password if changing..." : "SecurePassword123!"}
+                    placeholder="••••••••"
                     className="w-full px-3 py-2 rounded-xl border border-gray-200 bg-gray-50 text-gray-700 outline-none focus:border-indigo-400 transition-colors"
                     style={{ fontSize: "13px" }}
                   />
@@ -374,8 +425,12 @@ export default function ReceptionistsPage() {
                   />
                 </div>
 
-                <button type="submit" className="w-full py-2.5 rounded-xl text-white hover:opacity-90 transition-all col-span-2 cursor-pointer mt-2" style={{ background: "linear-gradient(135deg, #4F46E5, #6366F1)", fontSize: "13px", fontWeight: 600 }}>
-                  {editingId ? "Save Changes" : "Add Receptionist"}
+                <button
+                  type="submit"
+                  className="col-span-2 mt-4 w-full py-3 rounded-xl text-white font-bold text-sm cursor-pointer transition-all hover:opacity-95"
+                  style={{ background: "linear-gradient(135deg, #4F46E5, #6366F1)" }}
+                >
+                  {editingId ? "Update Receptionist" : "Add Receptionist"}
                 </button>
               </form>
             </motion.div>

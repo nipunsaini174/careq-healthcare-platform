@@ -1,30 +1,83 @@
 import type { Request, Response } from 'express';
 import { prisma } from '../prisma/client.js';
+import { queueService } from '../services/queue.service.js';
+import { resolveHospitalIdForUser } from '../utils/tenant.js';
 
 export class QueueController {
+  getDoctorQueue = async (req: Request, res: Response) => {
+    try {
+      const hospitalId = await resolveHospitalIdForUser(req);
+      const doctorId = req.query.doctorId ? BigInt(req.query.doctorId as string) : undefined;
+      const data = await queueService.getQueueForDoctor(hospitalId, doctorId);
+      res.status(200).json(data);
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  };
+
+  generateToken = async (req: Request, res: Response) => {
+    try {
+      const hospitalId = await resolveHospitalIdForUser(req);
+      const token = await queueService.generateToken({
+        ...req.body,
+        hospital_id: req.body.hospital_id || String(hospitalId),
+      });
+      res.status(201).json(token);
+    } catch (err: any) {
+      res.status(400).json({ error: err.message });
+    }
+  };
+
+  callNext = async (req: Request, res: Response) => {
+    try {
+      const hospitalId = await resolveHospitalIdForUser(req);
+      const doctorId = BigInt(req.body.doctorId || 1);
+      const result = await queueService.callNextPatient(hospitalId, doctorId);
+      res.status(200).json(result);
+    } catch (err: any) {
+      res.status(400).json({ error: err.message });
+    }
+  };
+
+  completeConsultation = async (req: Request, res: Response) => {
+    try {
+      const { id } = req.params;
+      const result = await queueService.completeConsultation(id as string);
+      res.status(200).json(result);
+    } catch (err: any) {
+      res.status(400).json({ error: err.message });
+    }
+  };
+
+  skipPatient = async (req: Request, res: Response) => {
+    try {
+      const { id } = req.params;
+      const result = await queueService.skipPatient(id as string);
+      res.status(200).json(result);
+    } catch (err: any) {
+      res.status(400).json({ error: err.message });
+    }
+  };
+
   async getQueuesLoad(req: Request, res: Response) {
     try {
-      const { resolveHospitalIdForUser } = await import('../utils/tenant.js');
       const hospitalId = await resolveHospitalIdForUser(req);
 
-      // In a full implementation, we would group queue_tokens by department/type.
-      // For dashboard visualization, we aggregate counts for the main hospital queues.
-      
       const opdWait = await prisma.queue_tokens.count({
-        where: { hospital_id: hospitalId, token_status: 'Waiting', token_type: 'OPD' }
-      });
-      
+        where: { hospital_id: hospitalId, token_status: 'WAITING', token_type: 'OPD' }
+      }).catch(() => 0);
+
       const labWait = await prisma.queue_tokens.count({
-        where: { hospital_id: hospitalId, token_status: 'Waiting', token_type: 'Lab' }
-      });
+        where: { hospital_id: hospitalId, token_status: 'WAITING', token_type: 'Lab' }
+      }).catch(() => 0);
 
       const billingWait = await prisma.queue_tokens.count({
-        where: { hospital_id: hospitalId, token_status: 'Waiting', token_type: 'Billing' }
-      });
+        where: { hospital_id: hospitalId, token_status: 'WAITING', token_type: 'Billing' }
+      }).catch(() => 0);
 
       const pharmacyWait = await prisma.queue_tokens.count({
-        where: { hospital_id: hospitalId, token_status: 'Waiting', token_type: 'Pharmacy' }
-      });
+        where: { hospital_id: hospitalId, token_status: 'WAITING', token_type: 'Pharmacy' }
+      }).catch(() => 0);
 
       const queues = [
         {

@@ -134,7 +134,7 @@ export function KpiCards() {
       icon: CalendarDays,
       value: kpis.appointmentsTotal,
       label: "Total Appointments",
-      trend: "+12",
+      trend: "",
       trendUp: true,
       iconBg: "#EEF9F5",
       iconColor: "#3AB58F",
@@ -146,7 +146,7 @@ export function KpiCards() {
       icon: Clock,
       value: kpis.waiting,
       label: "Currently Waiting in Hospital",
-      trend: "+8",
+      trend: "",
       trendUp: false,
       iconBg: "#FFF4EC",
       iconColor: "#F97316",
@@ -157,7 +157,7 @@ export function KpiCards() {
       icon: Stethoscope,
       value: kpis.consultation,
       label: "Under Consultation",
-      trend: "-3",
+      trend: "",
       trendUp: true,
       iconBg: "#EEF3FF",
       iconColor: "#6366F1",
@@ -168,7 +168,7 @@ export function KpiCards() {
       icon: CheckCircle2,
       value: kpis.completed,
       label: "Completed Today",
-      trend: "+47",
+      trend: "",
       trendUp: true,
       iconBg: "#EEF9F5",
       iconColor: "#22C55E",
@@ -179,7 +179,7 @@ export function KpiCards() {
       icon: FlaskConical,
       value: kpis.labQueue,
       label: "In Lab Queue",
-      trend: "+5",
+      trend: "",
       trendUp: false,
       iconBg: "#FEF3F2",
       iconColor: "#EF4444",
@@ -190,7 +190,7 @@ export function KpiCards() {
       icon: UserX,
       value: kpis.noShow,
       label: "No Shows",
-      trend: "-4",
+      trend: "",
       trendUp: true,
       iconBg: "#F5F5F5",
       iconColor: "#9CA3AF",
@@ -285,7 +285,7 @@ export function KpiCards() {
                       )}
                     </AnimatePresence>
                   </div>
-                ) : (
+                ) : card.trend ? (
                   <span
                     className="px-2.5 py-1 rounded-full text-xs font-bold shadow-sm"
                     style={{
@@ -295,7 +295,7 @@ export function KpiCards() {
                   >
                     {card.trend}
                   </span>
-                )}
+                ) : null}
               </div>
               <div>
                 <p className="text-gray-900 text-3xl font-bold leading-tight">

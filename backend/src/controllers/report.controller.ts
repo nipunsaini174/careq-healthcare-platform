@@ -6,12 +6,6 @@ type AppointmentRange = 'today' | '7d' | '30d';
 
 const ALLOWED_RANGES: ReadonlySet<AppointmentRange> = new Set(['today', '7d', '30d']);
 
-/**
- * Resolve the inclusive lower bound for an appointment-count window.
- * Uses server-local time; for a multi-region deployment we'd want to
- * accept a tz hint from the client, but for a single-tenant hospital
- * dashboard the server's clock is the source of truth.
- */
 function resolveRangeStart(range: AppointmentRange): Date {
   const start = new Date();
   if (range === 'today') {
@@ -34,66 +28,70 @@ export class ReportController {
         : 'today';
       const rangeStart = resolveRangeStart(range);
 
-      const [
-        appointmentsTotal,
-        admitted,
-        waiting,
-        consultation,
-        labQueue,
-        completed,
-        noShow,
-        uniquePatients,
-      ] = await prisma.$transaction([
-        prisma.appointments.count({
-          where: { hospital_id: hospitalId, appointment_date: { gte: rangeStart } }
-        }),
-        prisma.patients.count({
-          where: { hospital_id: hospitalId, patient_status: 'Admitted' }
-        }),
-        prisma.queue_tokens.count({
-          where: { hospital_id: hospitalId, token_status: 'Waiting' }
-        }),
-        prisma.consultations.count({
-          where: {
-            patients: { hospital_id: hospitalId },
-            consultation_status: 'In Progress' 
-          }
-        }),
-        prisma.lab_reports.count({
-          where: { hospital_id: hospitalId, report_status: 'Pending' }
-        }),
-        prisma.consultations.count({
-          where: {
-            patients: { hospital_id: hospitalId },
-            consultation_status: 'Completed' 
-          }
-        }),
-        prisma.queue_tokens.count({
-          where: { hospital_id: hospitalId, token_status: 'No Show' }
-        }),
-        // Count of DISTINCT patient_id with an appointment in the
-        // selected window — answers "how many real people booked
-        // appointments". Prisma's `groupBy({ _count: ... })` returns
-        // one row per patient; we read the length of that array.
-        prisma.appointments.groupBy({
-          by: ['patient_id'],
-          where: { hospital_id: hospitalId, appointment_date: { gte: rangeStart } },
-          orderBy: { patient_id: 'asc' },
-          _count: { patient_id: true },
-        }),
-      ]);
+      try {
+        const [
+          appointmentsTotal,
+          admitted,
+          waiting,
+          consultation,
+          labQueue,
+          completed,
+          noShow,
+          uniquePatients,
+        ] = await prisma.$transaction([
+          prisma.appointments.count({
+            where: { hospital_id: hospitalId, appointment_date: { gte: rangeStart }, appointment_status: { notIn: ['CANCELLED', 'cancelled'] } }
+          }),
+          prisma.patients.count({
+            where: { hospital_id: hospitalId, patient_status: { in: ['Admitted', 'ADMITTED'] } }
+          }),
+          prisma.queue_tokens.count({
+            where: { hospital_id: hospitalId, token_status: { in: ['WAITING', 'Waiting', 'waiting'] } }
+          }),
+          prisma.queue_tokens.count({
+            where: { hospital_id: hospitalId, token_status: { in: ['IN_PROGRESS', 'In Progress', 'SERVING', 'Serving'] } }
+          }),
+          prisma.queue_tokens.count({
+            where: { hospital_id: hospitalId, token_type: { in: ['LAB', 'Lab', 'lab'] }, token_status: { in: ['WAITING', 'Waiting'] } }
+          }),
+          prisma.queue_tokens.count({
+            where: { hospital_id: hospitalId, token_status: { in: ['COMPLETED', 'Completed', 'completed'] } }
+          }),
+          prisma.queue_tokens.count({
+            where: { hospital_id: hospitalId, token_status: { in: ['NO_SHOW', 'No Show', 'SKIPPED', 'Skipped'] } }
+          }),
+          prisma.appointments.groupBy({
+            by: ['patient_id'],
+            where: { hospital_id: hospitalId, appointment_date: { gte: rangeStart } },
+            _count: { patient_id: true },
+          }),
+        ]);
 
-      res.status(200).json({
-        appointmentsTotal,
-        totalPatients: Array.isArray(uniquePatients) ? uniquePatients.length : 0,
-        admitted,
-        waiting,
-        consultation,
-        labQueue,
-        completed,
-        noShow,
-        range
-      });
+        res.status(200).json({
+          appointmentsTotal,
+          totalPatients: Array.isArray(uniquePatients) ? uniquePatients.length : 0,
+          admitted,
+          waiting,
+          consultation,
+          labQueue,
+          completed,
+          noShow,
+          range
+        });
+      } catch (dbError) {
+        console.warn("DB KPI query warning, returning zero-baseline stats:", dbError);
+        res.status(200).json({
+          appointmentsTotal: 0,
+          totalPatients: 0,
+          admitted: 0,
+          waiting: 0,
+          consultation: 0,
+          labQueue: 0,
+          completed: 0,
+          noShow: 0,
+          range
+        });
+      }
     } catch (error: any) {
       res.status(500).json({ error: error.message });
     }

@@ -64,11 +64,11 @@ function mapApiHospital(h: ApiHospital): Hospital {
   };
 }
 
-// Default time-slots until the backend exposes per-doctor availability.
-// We surface a fixed set so the booking flow downstream doesn't break
-// when a real doctor record (which has no slots column today) is
-// mapped into the UI shape.
-const DEFAULT_AVAILABLE_SLOTS: string[] = ["09:30 AM", "11:00 AM", "02:30 PM", "04:00 PM"];
+// OPD starts at 09:00 AM with exactly 10-minute slot intervals per patient
+const DEFAULT_AVAILABLE_SLOTS: string[] = [
+  "09:00 AM", "09:10 AM", "09:20 AM", "09:30 AM", "09:40 AM", "09:50 AM",
+  "10:00 AM", "10:10 AM", "10:20 AM", "10:30 AM", "10:40 AM", "10:50 AM"
+];
 
 /**
  * Backend → UI mapper. The booking screen's `Doctor` interface has a
