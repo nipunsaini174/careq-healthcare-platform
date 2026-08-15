@@ -48,7 +48,7 @@ router.delete(
 router.get(
   '/profile',
   authMiddleware,
-  requireRole('receptionist'),
+  requireRole('receptionist', 'admin'),
   receptionistController.getMyProfile,
 );
 router.patch(

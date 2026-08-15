@@ -89,8 +89,8 @@ function mapApiDoctor(api: ApiBookingDoctor): Doctor {
     hospitalId: api.hospitalId,
     rating: api.rating || 0,
     experience: api.experience ? `${api.experience} years` : "—",
-    availableSlots: DEFAULT_AVAILABLE_SLOTS,
-    queueLength: 0,
+    availableSlots: (api as any).availableSlots && (api as any).availableSlots.length > 0 ? (api as any).availableSlots : DEFAULT_AVAILABLE_SLOTS,
+    queueLength: typeof (api as any).queueLength === "number" ? (api as any).queueLength : 0,
   };
 }
 

@@ -90,15 +90,19 @@ function BookingDetailsContent() {
       // Pages re-fetch on mount, so we just forward to the confirmation
       // screen — no localStorage mirroring required.
 
+      const rawAptId = (newApt as any)?.appointment_id || (newApt as any)?.id || Date.now().toString().slice(-4);
+      const cleanAptId = String(rawAptId).startsWith("APT-") ? String(rawAptId) : `APT-${rawAptId}`;
+
       const query = new URLSearchParams();
-      query.set("appointmentId", `APT-${newApt.appointment_id}`);
+      query.set("appointmentId", cleanAptId);
       query.set("doctorName", doctorName || "");
       query.set("department", department || "");
       query.set("hospitalName", hospitalName || "");
       query.set("bookingType", bookingType);
       
-      if (newApt.appointment_date) {
-        query.set("appointmentDate", newApt.appointment_date);
+      const aptDate = (newApt as any)?.appointment_date || (newApt as any)?.isoDate;
+      if (aptDate) {
+        query.set("appointmentDate", aptDate);
       }
       
       if (bookingType === "other" && person) {

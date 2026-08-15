@@ -16,7 +16,7 @@ export class RetentionController {
   async getPatientDetail(req: Request, res: Response) {
     try {
       const { journeyId } = req.params;
-      const data = await retentionService.getPatientRiskDetail(BigInt(journeyId));
+      const data = await retentionService.getPatientRiskDetail(Number(journeyId as string));
       res.status(200).json({ success: true, data });
     } catch (error: any) {
       res.status(500).json({ success: false, error: error.message });
@@ -26,7 +26,7 @@ export class RetentionController {
   async triggerAssessment(req: Request, res: Response) {
     try {
       const { journeyId } = req.params;
-      const assessment = await retentionService.triggerAssessment(BigInt(journeyId));
+      const assessment = await retentionService.triggerAssessment(Number(journeyId as string));
       res.status(200).json({ success: true, data: assessment });
     } catch (error: any) {
       res.status(500).json({ success: false, error: error.message });
@@ -36,13 +36,15 @@ export class RetentionController {
   async createIntervention(req: Request, res: Response) {
     try {
       const { journeyId, type, priority, assignedTo, notes } = req.body;
-      const intervention = await retentionService.createIntervention({
-        journeyId: BigInt(journeyId),
-        type,
-        priority: priority || 'HIGH',
-        assignedTo: assignedTo ? BigInt(assignedTo) : undefined,
-        notes,
-      });
+      const interventionData: any = {
+        journeyId: Number(journeyId),
+        type: type as string,
+        priority: priority ? (priority as string) : 'HIGH',
+      };
+      if (assignedTo) interventionData.assignedTo = Number(assignedTo);
+      if (notes) interventionData.notes = notes as string;
+      
+      const intervention = await retentionService.createIntervention(interventionData);
       res.status(201).json({ success: true, data: intervention });
     } catch (error: any) {
       res.status(500).json({ success: false, error: error.message });
@@ -54,10 +56,10 @@ export class RetentionController {
       const { interventionId } = req.params;
       const { outcome, outcomeNotes, rescheduledDate } = req.body;
       const result = await retentionService.recordOutcome(
-        BigInt(interventionId),
-        outcome,
-        outcomeNotes,
-        rescheduledDate
+        Number(interventionId as string),
+        outcome as string,
+        outcomeNotes as string,
+        rescheduledDate as string
       );
       res.status(200).json({ success: true, data: result });
     } catch (error: any) {

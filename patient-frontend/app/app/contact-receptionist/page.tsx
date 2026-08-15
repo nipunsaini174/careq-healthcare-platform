@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { ArrowLeft, Phone, MessageSquare, ChevronDown, Send, Info, Calendar } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { patientApi, type ApiAppointment } from "@/services/api/patientApi";
+import { patientApi, isUpcomingStatus, type ApiAppointment } from "@/services/api/patientApi";
 
 export default function ContactReceptionist() {
   const router = useRouter();
@@ -20,7 +20,9 @@ export default function ContactReceptionist() {
         const list = await patientApi.getAppointments();
         if (cancelled) return;
         // Receptionist contact only makes sense for currently-active bookings.
-        const upcoming = list.filter((a) => a.status === "Upcoming");
+        const upcoming = list
+          .filter((a) => isUpcomingStatus(a.status))
+          .sort((a, b) => new Date(a.isoDate).getTime() - new Date(b.isoDate).getTime());
         setAppointments(upcoming);
         if (upcoming.length > 0) {
           setSelectedAppointmentId(upcoming[0].id);

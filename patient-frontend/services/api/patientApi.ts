@@ -4,6 +4,7 @@ import type { ApiResponse, Patient } from "@/types";
 export interface ApiAppointment {
   id: string; // "APT-123"
   appointment_id: string;
+  appointment_date?: string;
   doctorId: string;
   doctorName: string;
   department: string;
@@ -15,6 +16,38 @@ export interface ApiAppointment {
   patientName: string;
   relationship: string;
   personId: string;
+  queuePosition?: number;
+  estimatedWaitTime?: number;
+  tokenCode?: string;
+  token?: {
+    tokenId?: string;
+    tokenCode?: string;
+    queuePosition?: number;
+    estimatedWaitTime?: number;
+  };
+  liveQueueTokens?: string[];
+}
+
+export const ACTIVE_APPOINTMENT_STATUSES = [
+  "Upcoming",
+  "Confirmed",
+  "CONFIRMED",
+  "Scheduled",
+  "In Progress",
+  "IN_PROGRESS",
+  "Waiting",
+  "Active"
+];
+
+export function isUpcomingStatus(status?: string): boolean {
+  if (!status) return false;
+  const s = status.trim().toLowerCase();
+  if (['completed', 'cancelled', 'canceled', 'done', 'checkedout', 'checked_out', 'skipped', 'absent'].includes(s)) {
+    return false;
+  }
+  return ACTIVE_APPOINTMENT_STATUSES.some(
+    (active) => active.toLowerCase() === s
+  );
 }
 
 /** Map API patient record → profile form state. */

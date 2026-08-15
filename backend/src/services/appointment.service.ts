@@ -7,7 +7,7 @@ export class AppointmentService {
    * OPD starts at 09:00 AM. Each appointment is allocated exactly 10 minutes.
    * Patient 1 -> 09:00 AM, Patient 2 -> 09:10 AM, Patient 3 -> 09:20 AM...
    */
-  async calculateNextAvailableSlot(doctorId: bigint, targetDateStr?: string) {
+  async calculateNextAvailableSlot(doctorId: number, targetDateStr?: string) {
     const targetDate = targetDateStr ? new Date(targetDateStr) : new Date();
     
     // Set base time to 09:00 AM
@@ -60,19 +60,19 @@ export class AppointmentService {
     appointment_type?: string;
     appointment_date?: string;
   }) {
-    const docId = BigInt(data.doctor_id);
-    const hospId = BigInt(data.hospital_id);
+    const docId = Number(data.doctor_id);
+    const hospId = Number(data.hospital_id);
 
-    let patId: bigint;
+    let patId: number;
     if (data.patient_id) {
-      patId = BigInt(data.patient_id);
+      patId = Number(data.patient_id);
     } else {
       // Find or create default demo patient if not provided
       try {
         const firstPat = await prisma.patients.findFirst();
-        patId = firstPat ? firstPat.patient_id : BigInt(1);
+        patId = firstPat ? firstPat.patient_id : Number(1);
       } catch {
-        patId = BigInt(1);
+        patId = Number(1);
       }
     }
 
@@ -159,7 +159,7 @@ export class AppointmentService {
     }
   }
 
-  async getAppointments(hospitalId: bigint) {
+  async getAppointments(hospitalId: number) {
     try {
       const list = await prisma.appointments.findMany({
         where: { hospital_id: hospitalId },
@@ -193,7 +193,7 @@ export class AppointmentService {
   }
 
   async cancelAppointment(appointmentId: string) {
-    const id = BigInt(appointmentId);
+    const id = Number(appointmentId);
     try {
       const appt = await prisma.appointments.update({
         where: { appointment_id: id },

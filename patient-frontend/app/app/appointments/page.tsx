@@ -6,9 +6,8 @@ import { motion, AnimatePresence } from "motion/react";
 import { ArrowLeft, Calendar, Clock, User, Activity, ChevronDown, ChevronUp } from "lucide-react";
 import { useProfile } from "@/hooks/useAppData";
 import { usePeople } from "@/hooks/usePeople";
-import { getPersonByName } from "@/lib/people";
 import { PeopleFilterBar, ALL_PEOPLE } from "@/components/people/PeopleFilterBar";
-import { patientApi, type ApiAppointment } from "@/services/api/patientApi";
+import { patientApi, isUpcomingStatus, type ApiAppointment } from "@/services/api/patientApi";
 
 export default function AppointmentsPage() {
   const router = useRouter();
@@ -28,7 +27,7 @@ export default function AppointmentsPage() {
         const list = await patientApi.getAppointments();
         if (!cancelled) setAppointments(list);
       } catch (e) {
-        if (!cancelled) setAppointments([]);
+        console.error("Failed to load appointments", e);
       } finally {
         if (!cancelled) setIsLoading(false);
       }
@@ -38,53 +37,55 @@ export default function AppointmentsPage() {
     };
   }, []);
 
-  // Resolve a person id for each appointment, falling back to a name match for
-  // legacy records that pre-date the people feature.
-  const resolvePersonId = (apt: any): string => {
-    if (apt.personId) return apt.personId;
-    if (apt.bookingType === "self") return "self";
-    return getPersonByName(apt.patientName)?.id || "";
-  };
-
   const filteredAppointments = useMemo(() => {
     if (selectedPersonId === ALL_PEOPLE) return appointments;
-    return appointments.filter((apt) => resolvePersonId(apt) === selectedPersonId);
-  }, [appointments, selectedPersonId]);
+    const person = people.find((p) => p.id === selectedPersonId);
+    if (!person) return appointments;
+
+    return appointments.filter((apt) => {
+      if (person.isSelf) {
+        return apt.bookingType === "self" || apt.relationship === "Self";
+      }
+      return (
+        apt.bookingType === "other" &&
+        apt.patientName.toLowerCase() === person.name.toLowerCase()
+      );
+    });
+  }, [appointments, selectedPersonId, people]);
 
   return (
     <div className="min-h-full bg-gray-50 dark:bg-[#0B0F14] pb-6">
       {/* Header */}
-      <div className="sticky top-0 bg-gradient-to-br from-teal-400 to-teal-500 dark:from-[#064E3B] dark:via-[#047857] dark:to-[#065F46] pt-12 pb-12 px-6 rounded-b-[40px] text-white z-40 shadow-lg shadow-teal-900/20">
-        <div className="flex items-center mb-6">
-          <button 
+      <div className="bg-gradient-to-br from-teal-400 to-teal-500 dark:from-[#064E3B] dark:via-[#047857] dark:to-[#065F46] pt-14 pb-8 px-6 rounded-b-[2.5rem] shadow-md text-white">
+        <div className="flex items-center justify-between mb-4">
+          <button
             onClick={() => router.back()}
-            className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center mr-4 backdrop-blur-sm transition-colors hover:bg-white/30"
+            className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center backdrop-blur-sm border border-white/20 active:scale-95 transition-transform"
           >
             <ArrowLeft className="w-5 h-5 text-white" />
           </button>
-          <h1 className="text-2xl font-bold">My Appointments</h1>
+          <h1 className="text-xl font-bold">My Appointments</h1>
+          <div className="w-10"></div>
         </div>
         <p className="text-white/80 text-sm font-medium">Manage your upcoming and past visits</p>
       </div>
 
-      {/* Background Gradient Depth */}
-      <div className="fixed top-0 left-0 right-0 h-64 bg-gradient-to-b from-gray-200/80 to-transparent dark:from-gray-900/80 pointer-events-none z-0"></div>
-
-      {/* People Filter */}
-      <div className="mt-5 px-4 relative z-10">
+      {/* People / Beneficiary Filter Bar */}
+      <div className="px-4 -mt-4 relative z-10 mb-4">
         <PeopleFilterBar
           people={people}
           selectedId={selectedPersonId}
           onSelect={setSelectedPersonId}
-          className="pt-1"
         />
       </div>
 
-      {/* Main Content */}
-      <div className="mt-4 px-4 relative z-10 space-y-4">
+      {/* Content */}
+      <div className="px-4 space-y-4">
         {isLoading ? (
-          <div className="bg-white dark:bg-[#1A2332] rounded-[1.5rem] p-8 text-center shadow-sm border border-gray-100 dark:border-[#2A3A4E]">
-            <p className="text-gray-500 dark:text-[#94A3B8] text-sm">Loading your appointments…</p>
+          <div className="space-y-4">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="h-36 bg-white dark:bg-[#1A2332] rounded-[1.5rem] animate-pulse border border-gray-100 dark:border-[#2A3A4E]" />
+            ))}
           </div>
         ) : filteredAppointments.length === 0 ? (
           <div className="bg-white dark:bg-[#1A2332] rounded-[1.5rem] p-8 text-center shadow-sm border border-gray-100 dark:border-[#2A3A4E]">
@@ -106,7 +107,7 @@ export default function AppointmentsPage() {
           </div>
         ) : (
           filteredAppointments.map((apt, index) => {
-            const isUpcoming = apt.status === "Upcoming";
+            const isUpcoming = isUpcomingStatus(apt.status);
             // For testing purposes, we treat all upcoming appointments as if they are "Today" so the Live Queue buttons show up.
             const isToday = isUpcoming;
 

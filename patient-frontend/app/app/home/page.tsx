@@ -32,7 +32,7 @@ import {
 import { useLayout } from "@/contexts/LayoutContext";
 import { LiveQueueTracker } from "@/components/ui/LiveQueueTracker";
 import { SmartSearchBar } from "@/components/ui/SmartSearchBar";
-import { patientApi } from "../../../services/api/patientApi";
+import { patientApi, isUpcomingStatus } from "../../../services/api/patientApi";
 import { useProfile, useAppointments } from "../../../hooks/useAppData";
 
 export default function Home() {
@@ -84,7 +84,7 @@ export default function Home() {
       return;
     }
 
-    const upcoming = list.filter((apt) => apt.status === "Upcoming");
+    const upcoming = list.filter((apt) => isUpcomingStatus(apt.status));
     setUpcomingAppointments(upcoming);
 
     if (upcoming.length > 0) {
@@ -95,6 +95,7 @@ export default function Home() {
       setNextAppointment(sorted[0]);
       setUserState("active");
     } else {
+      setNextAppointment(null);
       setUserState("returning-empty");
       const past = list
         .filter((a) => a.status === "Completed" || a.status === "Cancelled")
@@ -104,6 +105,8 @@ export default function Home() {
         const mostRecent = Math.max(...past);
         const days = Math.max(0, Math.floor((Date.now() - mostRecent) / 86400000));
         setDaysSinceLastVisit(days);
+      } else {
+        setDaysSinceLastVisit(0);
       }
     }
   }, [appointmentsList, isAppointmentsLoading]);
@@ -133,12 +136,12 @@ export default function Home() {
     if (nextAppointment) {
       suggestions.push({
         id: "next-appt",
-        icon: Calendar,
-        title: `${nextAppointment.doctorName} at ${nextAppointment.time}`,
-        subtitle: `Prepare for your ${nextAppointment.department} visit`,
-        cta: "Prepare",
+        icon: Activity,
+        title: `Token ${nextAppointment.tokenCode || nextAppointment.token?.tokenCode || nextAppointment.id.replace("APT-", "T-")} • ${nextAppointment.doctorName}`,
+        subtitle: `${nextAppointment.department} • ${nextAppointment.date} at ${nextAppointment.time}`,
+        cta: "Track Queue",
         tone: "teal",
-        onClick: () => router.push("/app/pre-consultation"),
+        onClick: () => router.push(`/app/queue?appointmentId=${nextAppointment.id}`),
       });
     }
 
@@ -235,15 +238,15 @@ export default function Home() {
             initial={{ y: 20, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             transition={{ delay: 0.1 }}
-            onClick={() => router.push("/app/queue")}
-            className="bg-white/30 dark:bg-[#1A2332]/70 backdrop-blur-xl rounded-3xl p-4 border border-white/40 dark:border-[#2A3A4E] relative overflow-hidden shadow-xl shadow-teal-900/10 dark:shadow-black/20"
+            onClick={() => router.push(`/app/queue?appointmentId=${nextAppointment.id}`)}
+            className="bg-white/30 dark:bg-[#1A2332]/70 backdrop-blur-xl rounded-3xl p-4 border border-white/40 dark:border-[#2A3A4E] relative overflow-hidden shadow-xl shadow-teal-900/10 dark:shadow-black/20 cursor-pointer"
           >
             {/* Top Row (Header) */}
             <div className="flex items-center justify-between mb-4 relative z-10">
               <div className="flex flex-col items-start">
-                <span className="text-[10px] text-slate-900/80 dark:text-emerald-200/80 font-bold uppercase tracking-wider mb-1">Current Token</span>
+                <span className="text-[10px] text-slate-900/80 dark:text-emerald-200/80 font-bold uppercase tracking-wider mb-1">Your Token</span>
                 <span className="text-[32px] font-bold text-slate-900 dark:text-white leading-none tracking-tight">
-                  {nextAppointment.id.replace("APT-", "T-")}
+                  {nextAppointment.tokenCode || nextAppointment.token?.tokenCode || nextAppointment.id.replace("APT-", "T-")}
                 </span>
               </div>
               <div className="flex flex-col items-end gap-2">
@@ -265,14 +268,24 @@ export default function Home() {
 
             {/* Middle Row (The Minimalist Queue Tracker) */}
             <div className="relative z-10 -mx-2 mt-4">
-              <LiveQueueTracker />
+              <LiveQueueTracker 
+                tokens={(nextAppointment as any)?.liveQueueTokens || []} 
+                userToken={nextAppointment.tokenCode || nextAppointment.token?.tokenCode || nextAppointment.id.replace("APT-", "T-")}
+                arriveByTime={nextAppointment.time} 
+              />
             </div>
 
             {/* Bottom Row (Footer) */}
             <div className="flex items-center justify-between pt-3 border-t border-slate-900/10 dark:border-[#2A3A4E] relative z-10">
-              <p className="text-slate-900/90 dark:text-white/90 text-sm font-bold">Wait Time: 15 mins</p>
+              <div className="flex items-center gap-4">
+                <p className="text-slate-900/90 dark:text-white/90 text-sm font-bold">Wait Time: {(nextAppointment as any)?.estimatedWaitTime || 0} mins</p>
+                <p className="text-slate-900/90 dark:text-white/90 text-sm font-bold text-teal-600 dark:text-emerald-400">Ahead: {Math.max(0, ((nextAppointment as any)?.queuePosition || 1) - 1)}</p>
+              </div>
               <button
-                onClick={() => router.push("/app/queue")}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  router.push(`/app/queue?appointmentId=${nextAppointment.id}`);
+                }}
                 className="flex items-center gap-1 text-slate-900/90 dark:text-white/90 text-xs font-bold cursor-pointer hover:text-slate-900 dark:hover:text-white transition-colors"
               >
                 View Timeline <span>&rarr;</span>
@@ -400,7 +413,7 @@ export default function Home() {
               initial={{ y: 20, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               transition={{ delay: 0.1 }}
-              onClick={() => router.push("/app/queue")}
+              onClick={() => router.push(`/app/queue?appointmentId=${nextAppointment.id}`)}
               className={`${isMobileView ? 'hidden' : 'block col-span-8'} bg-gradient-to-br from-teal-400 to-teal-500 dark:from-[#064E3B] dark:via-[#047857] dark:to-[#065F46] rounded-3xl p-6 cursor-pointer hover:shadow-xl transition-shadow relative overflow-hidden`}
             >
               {/* Background embellishments */}
@@ -409,9 +422,9 @@ export default function Home() {
               {/* Top Row (Header) */}
               <div className="flex items-center justify-between mb-6 relative z-10">
                 <div className="flex flex-col items-start">
-                  <span className="text-[12px] text-slate-900/80 dark:text-emerald-200/80 font-bold uppercase tracking-wider mb-1">Current Token</span>
+                  <span className="text-[12px] text-slate-900/80 dark:text-emerald-200/80 font-bold uppercase tracking-wider mb-1">Your Token</span>
                   <span className="text-[32px] font-bold text-slate-900 dark:text-white leading-none tracking-tight">
-                    {nextAppointment.id.replace("APT-", "T-")}
+                    {nextAppointment.tokenCode || nextAppointment.token?.tokenCode || nextAppointment.id.replace("APT-", "T-")}
                   </span>
                 </div>
                 <div className="flex items-center gap-4">
@@ -433,14 +446,24 @@ export default function Home() {
 
               {/* Middle Row (The Minimalist Queue Tracker) */}
               <div className="relative z-10 mt-6">
-                <LiveQueueTracker />
+                <LiveQueueTracker 
+                  tokens={(nextAppointment as any)?.liveQueueTokens || []} 
+                  userToken={nextAppointment.tokenCode || nextAppointment.token?.tokenCode || nextAppointment.id.replace("APT-", "T-")}
+                  arriveByTime={nextAppointment.time} 
+                />
               </div>
 
               {/* Bottom Row (Footer) */}
               <div className="flex items-center justify-between mt-2 pt-5 border-t border-slate-900/10 dark:border-emerald-400/15 relative z-10">
-                <p className="text-slate-900/90 dark:text-white/90 text-base font-bold">Wait Time: 15 mins</p>
+                <div className="flex items-center gap-4">
+                  <p className="text-slate-900/90 dark:text-white/90 text-base font-bold">Wait Time: {(nextAppointment as any)?.estimatedWaitTime || 0} mins</p>
+                  <p className="text-slate-900/90 dark:text-white/90 text-base font-bold text-teal-600 dark:text-emerald-400">Ahead: {Math.max(0, ((nextAppointment as any)?.queuePosition || 1) - 1)}</p>
+                </div>
                 <button
-                  onClick={() => router.push("/app/queue")}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    router.push(`/app/queue?appointmentId=${nextAppointment.id}`);
+                  }}
                   className="flex items-center gap-1 text-slate-900/90 dark:text-white/90 text-base font-bold cursor-pointer hover:text-slate-900 dark:hover:text-white transition-colors"
                 >
                   View Full Timeline <span className="text-xl leading-none">&rarr;</span>
@@ -505,7 +528,7 @@ export default function Home() {
               initial={{ y: 20, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               transition={{ delay: 0.15 }}
-              onClick={() => router.push("/app/queue")}
+              onClick={() => router.push(nextAppointment ? `/app/queue?appointmentId=${nextAppointment.id}` : "/app/queue")}
               className={`hidden @4xl:flex @4xl:col-span-4 bg-white dark:bg-[#1A2332] rounded-2xl p-6 shadow-sm border border-gray-100 dark:border-[#2A3A4E] flex-col cursor-pointer hover:shadow-lg transition-shadow`}
             >
               <div className="flex items-center gap-3 mb-4">
@@ -514,23 +537,11 @@ export default function Home() {
                 </div>
                 <h3 className="text-gray-900 dark:text-slate-50 font-medium">Queue Status</h3>
               </div>
-              <div className="flex-1 flex flex-col justify-center items-center py-2">
-                <p className="text-[32px] font-bold text-gray-900 dark:text-white mb-1">3rd</p>
-                <p className="text-sm text-gray-500 dark:text-[#94A3B8]">in queue</p>
-              </div>
-              <div className="flex items-center justify-between pt-4 border-t border-gray-100 dark:border-[#2A3A4E]">
-                <div>
-                  <p className="text-xs text-gray-500 dark:text-[#94A3B8]">Ahead</p>
-                  <p className="text-lg font-semibold text-gray-900 dark:text-slate-50">2</p>
-                </div>
-                <div>
-                  <p className="text-xs text-gray-500 dark:text-[#94A3B8]">Behind</p>
-                  <p className="text-lg font-semibold text-gray-900 dark:text-slate-50">8</p>
-                </div>
-                <div>
-                  <p className="text-xs text-gray-500 dark:text-[#94A3B8]">Total</p>
-                  <p className="text-lg font-semibold text-gray-900 dark:text-slate-50">44</p>
-                </div>
+              <div className="flex-1 w-full flex flex-col justify-center">
+                <LiveQueueTracker 
+                  tokens={(nextAppointment as any)?.liveQueueTokens || []} 
+                  userToken={nextAppointment?.tokenCode || nextAppointment?.token?.tokenCode || nextAppointment?.id?.replace("APT-", "T-")}
+                />
               </div>
             </motion.div>
           )}
@@ -693,6 +704,86 @@ export default function Home() {
                   Free to use
                 </span>
               </motion.div>
+            </motion.section>
+          )}
+
+          {/* ====================== UPCOMING VISITS WITH LIVE QUEUE ====================== */}
+          {userState !== "first-time" && userState !== "loading" && upcomingAppointments.length > 0 && (
+            <motion.section
+              initial={{ y: 20, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ delay: 0.2 }}
+              className={`${isMobileView ? 'col-span-2 mt-2' : 'col-span-12 mt-4'}`}
+            >
+              <div className="flex items-center justify-between mb-3 px-0.5">
+                <div className="flex items-center gap-2">
+                  <Calendar className="w-4 h-4 text-teal-600 dark:text-emerald-400" />
+                  <h3 className="text-sm font-bold text-gray-900 dark:text-white tracking-tight">Upcoming Visits & Live Tokens</h3>
+                </div>
+                <Link href="/app/appointments" className="text-[11px] text-teal-600 dark:text-emerald-400 font-bold flex items-center gap-0.5 hover:underline">
+                  <span>View all ({upcomingAppointments.length})</span>
+                  <ChevronRight className="w-3.5 h-3.5" />
+                </Link>
+              </div>
+
+              <div className="space-y-2.5">
+                {upcomingAppointments.map((apt, i) => {
+                  const token = apt.tokenCode || apt.token?.tokenCode || apt.id.replace("APT-", "T-");
+                  return (
+                    <motion.div
+                      key={apt.id}
+                      initial={{ x: -8, opacity: 0 }}
+                      animate={{ x: 0, opacity: 1 }}
+                      transition={{ delay: 0.25 + i * 0.05 }}
+                      onClick={() => router.push(`/app/queue?appointmentId=${apt.id}`)}
+                      className="w-full bg-white dark:bg-[#1A2332] border border-gray-100 dark:border-[#2A3A4E] rounded-2xl p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 active:scale-[0.98] transition-all cursor-pointer shadow-[0_6px_20px_rgba(15,23,42,0.04)] dark:shadow-[0_6px_20px_rgba(0,0,0,0.25)] hover:border-teal-300 dark:hover:border-emerald-500/40"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="w-12 h-12 bg-teal-50 dark:bg-emerald-500/10 rounded-xl flex flex-col items-center justify-center shrink-0 border border-teal-100 dark:border-emerald-500/20">
+                          <span className="text-[9px] font-bold text-teal-600 dark:text-emerald-400 uppercase leading-none mb-0.5">Token</span>
+                          <span className="text-sm font-extrabold text-teal-700 dark:text-emerald-300 leading-none">{token}</span>
+                        </div>
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <h4 className="text-sm font-bold text-gray-900 dark:text-white truncate">{apt.doctorName}</h4>
+                            <span className="text-[10px] font-semibold px-2 py-0.5 bg-slate-100 dark:bg-[#223040] text-slate-600 dark:text-[#94A3B8] rounded-md">
+                              {apt.department}
+                            </span>
+                          </div>
+                          <p className="text-[11px] text-gray-500 dark:text-[#94A3B8] mt-1 flex items-center gap-2">
+                            <span>{apt.date} at {apt.time}</span>
+                            {apt.patientName && apt.relationship !== "Self" && (
+                              <span className="text-blue-600 dark:text-blue-400 font-medium">
+                                • {apt.patientName.split(" ")[0]} ({apt.relationship})
+                              </span>
+                            )}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center justify-between sm:justify-end gap-3 pt-2 sm:pt-0 border-t sm:border-t-0 border-gray-100 dark:border-[#2A3A4E]">
+                        <div className="text-left sm:text-right">
+                          <p className="text-[9px] text-gray-400 dark:text-[#64748B] uppercase font-bold tracking-wider">Ahead</p>
+                          <p className="text-xs font-bold text-teal-600 dark:text-emerald-400">
+                            {Math.max(0, (apt.queuePosition || 1) - 1)} in queue
+                          </p>
+                        </div>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            router.push(`/app/queue?appointmentId=${apt.id}`);
+                          }}
+                          className="px-3 py-1.5 bg-teal-500 dark:bg-emerald-600 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-sm hover:bg-teal-600 dark:hover:bg-emerald-500 active:scale-95 transition-all"
+                        >
+                          <Activity className="w-3.5 h-3.5" />
+                          <span>Track Live Queue</span>
+                          <ChevronRight className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </motion.div>
+                  );
+                })}
+              </div>
             </motion.section>
           )}
 

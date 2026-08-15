@@ -4,7 +4,7 @@ import { PlayCircle, Clock, CheckCircle2, Siren, FileText, AlertCircle, Trending
 import { useQueue } from '@/hooks/useQueue';
 
 export default function CommandCenter() {
-  const { queue } = useQueue();
+  const { queue, removeToken } = useQueue();
   
   // Queue State - dynamically pulled from useQueue
   const [currentToken, setCurrentToken] = useState('Waiting...');
@@ -22,6 +22,10 @@ export default function CommandCenter() {
       setActiveTokenData(current);
       
       setNextTokens(nextWaiters.map(q => q.tokenNumber).slice(active ? 0 : 1, 6)); // show next 5
+    } else {
+      setCurrentToken('Empty');
+      setActiveTokenData(null);
+      setNextTokens([]);
     }
   }, [queue]);
 
@@ -99,7 +103,7 @@ export default function CommandCenter() {
     setAttendanceMetrics(prev => ({ ...prev, recalled: prev.recalled + 1 }));
   };
 
-  const handleCheckOut = () => {
+  const handleCheckOut = async () => {
     setVisitStage(4); // Completed
     
     if (visitStartTime) {
@@ -109,13 +113,29 @@ export default function CommandCenter() {
     
     setAttendanceMetrics(prev => ({ ...prev, present: prev.present + 1 }));
 
+    // Remove patient token from live queue
+    const tokenToRemove = activeTokenData?.id || activeTokenData?.appointmentId || activeTokenData?.tokenNumber || currentToken;
+    if (tokenToRemove && tokenToRemove !== 'Empty' && tokenToRemove !== 'Waiting...') {
+      await removeToken(tokenToRemove);
+      if (activeTokenData?.appointmentId && String(activeTokenData.appointmentId) !== String(tokenToRemove)) {
+        await removeToken(activeTokenData.appointmentId);
+      }
+      if (activeTokenData?.tokenNumber && String(activeTokenData.tokenNumber) !== String(tokenToRemove)) {
+        await removeToken(activeTokenData.tokenNumber);
+      }
+    }
+
     setTimeout(() => {
       advanceQueue();
-    }, 1500);
+    }, 1200);
   };
 
   const advanceStage = () => {
-    if (visitStage > 0 && visitStage < 3) setVisitStage(visitStage + 1);
+    if (visitStage > 0 && visitStage < 3) {
+      setVisitStage(visitStage + 1);
+    } else if (visitStage === 3) {
+      handleCheckOut();
+    }
   };
 
   const advanceQueue = () => {
@@ -127,6 +147,15 @@ export default function CommandCenter() {
       setVisitStage(0);
       setVisitStartTime(null);
       setVisitDuration(null);
+      setIsPresent(false);
+    } else {
+      setCurrentToken('Empty');
+      setActiveTokenData(null);
+      setNextTokens([]);
+      setVisitStage(0);
+      setVisitStartTime(null);
+      setVisitDuration(null);
+      setIsPresent(false);
     }
   };
 
@@ -291,7 +320,17 @@ export default function CommandCenter() {
               const isActive = visitStage === stepIndex && visitStage !== 4;
               
               return (
-                <div key={idx} className="relative z-10 flex flex-col items-center gap-2 bg-white px-2 cursor-pointer" onClick={visitStage > 0 ? advanceStage : undefined}>
+                <div 
+                  key={idx} 
+                  className="relative z-10 flex flex-col items-center gap-2 bg-white px-2 cursor-pointer" 
+                  onClick={() => {
+                    if (stepIndex === 4) {
+                      handleCheckOut();
+                    } else if (visitStage > 0) {
+                      setVisitStage(stepIndex);
+                    }
+                  }}
+                >
                   <div className={`w-8 h-8 rounded-full flex items-center justify-center border-2 transition-all duration-300 ${
                     isCompleted ? 'bg-teal-500 border-teal-500 text-white' :
                     isActive ? 'bg-white border-blue-500 text-blue-500 shadow-[0_0_0_4px_rgba(59,130,246,0.1)]' :

@@ -37,6 +37,7 @@ export function useAppointments() {
     queryKey: QK.appointments,
     queryFn: () => patientApi.getAppointments(),
     enabled: typeof window !== "undefined" && !!localStorage.getItem("healthflow-access-token"),
+    refetchInterval: 5000, // 5s background sync fallback to guarantee live queue state freshness
     // Default to [] so callers don't need null checks
     initialData: undefined,
   });

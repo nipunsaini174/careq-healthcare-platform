@@ -38,6 +38,7 @@ export function ReceptionistProfileProvider({ children }: { children: React.Reac
   const [loadError, setLoadError] = useState<string | null>(null);
 
   const authFallback = useMemo(() => profileFromAuthUser(user), [user]);
+  const isFetchingRef = React.useRef(false);
 
   const refreshProfile = useCallback(async () => {
     if (!user) {
@@ -47,12 +48,16 @@ export function ReceptionistProfileProvider({ children }: { children: React.Reac
       return;
     }
 
+    if (isFetchingRef.current) return;
+    isFetchingRef.current = true;
+
     try {
-      setLoading(true);
       setLoadError(null);
       const data = await receptionistApi.getMyProfile();
       setProfile(data);
-      updateUser({ displayName: data.name, email: data.email });
+      if (data.name && user && (user.displayName !== data.name || user.email !== data.email)) {
+        updateUser({ displayName: data.name, email: data.email });
+      }
     } catch (err: unknown) {
       const axiosErr = err as {
         response?: { status?: number; data?: { error?: string } };
@@ -79,13 +84,14 @@ export function ReceptionistProfileProvider({ children }: { children: React.Reac
       }
     } finally {
       setLoading(false);
+      isFetchingRef.current = false;
     }
-  }, [user, updateUser, authFallback]);
+  }, [user?.uid]);
 
   useEffect(() => {
     if (authLoading) return;
     refreshProfile();
-  }, [authLoading, refreshProfile]);
+  }, [authLoading, user?.uid]);
 
   const updateProfile = useCallback(
     async (payload: { name: string; phone?: string }) => {
@@ -103,7 +109,16 @@ export function ReceptionistProfileProvider({ children }: { children: React.Reac
     [updateUser]
   );
 
-  const effectiveProfile = profile ?? authFallback;
+  const effectiveProfile = useMemo(() => {
+    const p = profile ?? authFallback;
+    if (!p) return null;
+    return {
+      ...p,
+      hospitalName: p.hospitalName || "CareQ Central Hospital",
+      branchName: p.branchName || "Main Branch",
+    };
+  }, [profile, authFallback]);
+
   const displayName = effectiveProfile?.name || user?.displayName || "Receptionist";
   const displayRole = formatRoleLabel(effectiveProfile?.role || "receptionist");
   const initials = profileInitials(displayName);

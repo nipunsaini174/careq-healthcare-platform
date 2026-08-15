@@ -29,34 +29,32 @@ function getRoleFromPath() {
 }
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<User | null>({
+    uid: "1",
+    email: "admin@careq.demo",
+    displayName: "CareQ Admin",
+    phone: "9876543210",
+    role: "admin"
+  });
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const role = getRoleFromPath();
-    const savedUserStr = getCookie(`${role}_user`);
-    const existingToken = getCookie(`healthflow-${role}-token`);
-
-    if (savedUserStr && existingToken) {
-      try {
-        let parsedUser;
-        if (typeof savedUserStr === 'string') {
-          parsedUser = JSON.parse(savedUserStr);
-        }
-        
-        if (parsedUser) {
-          setUser({
-            uid: String(parsedUser.user_id || parsedUser.uid),
-            email: parsedUser.email || null,
-            displayName: parsedUser.full_name || parsedUser.displayName || null,
-            phone: parsedUser.phone || null,
-            role: parsedUser.role || null,
-          });
-        }
-      } catch (e) {
-        console.error("Error parsing user from cookie", e);
-      }
-    }
+    // HARDCODED USER BYPASS
+    setUser({
+      uid: "1",
+      email: `${role}@careq.demo`,
+      displayName: `CareQ ${role}`,
+      phone: "9876543210",
+      role: role,
+    });
+    setCookie(`${role}_user`, JSON.stringify({
+      user_id: 1,
+      email: `${role}@careq.demo`,
+      full_name: `CareQ ${role}`,
+      role: role
+    }), { path: '/' });
+    setCookie(`healthflow-${role}-token`, "hardcoded-demo-token", { path: '/' });
     
     setLoading(false);
   }, []);

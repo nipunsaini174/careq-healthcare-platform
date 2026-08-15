@@ -5,7 +5,7 @@ import { resolveHospitalIdForUser } from '../utils/tenant.js';
 export class AppointmentController {
   getNextSlot = async (req: Request, res: Response) => {
     try {
-      const doctorId = req.query.doctorId ? BigInt(req.query.doctorId as string) : BigInt(1);
+      const doctorId = req.query.doctorId ? Number(req.query.doctorId as string) : Number(1);
       const dateStr = req.query.date as string | undefined;
       const slot = await appointmentService.calculateNextAvailableSlot(doctorId, dateStr);
       res.status(200).json(slot);

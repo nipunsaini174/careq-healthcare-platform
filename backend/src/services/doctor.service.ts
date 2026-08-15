@@ -9,10 +9,29 @@ import { safeEmit } from '../sockets/emit.js';
  * realtime payloads stay in lockstep — a frontend handling either
  * source sees identical fields.
  */
+function formatSlotTime(baseDate: Date, offsetMinutes: number): string {
+  const d = new Date(baseDate.getTime() + offsetMinutes * 60 * 1000);
+  return d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+}
+
 function mapDoctorRow(doc: any) {
   // If consultations were joined, compute real live stats
   const currentConsultation = doc.consultations?.find((c: any) => c.consultation_status === 'In Progress');
   const completedToday = doc.consultations?.filter((c: any) => c.consultation_status === 'Completed').length || 0;
+  const activeTokens = doc.queue_tokens?.filter((t: any) => ['Scheduled', 'Waiting', 'IN_PROGRESS'].includes(t.token_status)) || [];
+  const queueLength = activeTokens.length;
+
+  // Generate next 8 available slots in 15-minute intervals
+  const baseSlotDate = new Date();
+  baseSlotDate.setDate(baseSlotDate.getDate() + 1);
+  baseSlotDate.setHours(10, 30, 0, 0);
+
+  const bookedCount = doc.appointments?.filter((a: any) => a.appointment_status !== 'Cancelled').length || 0;
+  const availableSlots: string[] = [];
+  for (let i = 0; i < 8; i++) {
+    const slotOffset = (bookedCount + i) * 15;
+    availableSlots.push(formatSlotTime(baseSlotDate, slotOffset));
+  }
 
   return {
     id: String(doc.doctor_id),
@@ -36,13 +55,15 @@ function mapDoctorRow(doc: any) {
     publications: [] as string[],
     currentPatient: currentConsultation?.patients?.full_name || '—',
     patients: completedToday,
+    queueLength,
+    availableSlots,
   };
 }
 
 export type DoctorDto = ReturnType<typeof mapDoctorRow>;
 
 export class DoctorService {
-  async getAllDoctors(hospitalId?: bigint) {
+  async getAllDoctors(hospitalId?: number) {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
@@ -60,7 +81,17 @@ export class DoctorService {
           include: {
             patients: true,
           }
-        }
+        },
+        queue_tokens: {
+          where: {
+            token_status: { in: ['Scheduled', 'Waiting', 'IN_PROGRESS'] },
+          },
+        },
+        appointments: {
+          where: {
+            appointment_status: { not: 'Cancelled' },
+          },
+        },
       },
     });
     return doctors.map(mapDoctorRow);
@@ -98,7 +129,7 @@ export class DoctorService {
       .sort((a, b) => a.name.localeCompare(b.name));
   }
 
-  async createDoctor(data: any, adminHospitalId: bigint) {
+  async createDoctor(data: any, adminHospitalId: number) {
     const { name, dept, qualification, experience, phone, email, opd, schedule, bio, status, password, focus, awards } = data;
 
     try {
@@ -196,7 +227,7 @@ export class DoctorService {
 
   async updateDoctorStatus(id: string, status: string) {
     const updatedDoctor = await prisma.doctors.update({
-      where: { doctor_id: BigInt(id) },
+      where: { doctor_id: Number(id) },
       data: { availability_status: status },
       include: {
         users: true,
@@ -214,11 +245,11 @@ export class DoctorService {
     let departmentId: string | null = null;
 
     await prisma.$transaction(async (tx) => {
-      const doc = await tx.doctors.findUnique({ where: { doctor_id: BigInt(id) } });
+      const doc = await tx.doctors.findUnique({ where: { doctor_id: Number(id) } });
       if (doc) {
         hospitalId = String(doc.hospital_id);
         departmentId = String(doc.department_id);
-        await tx.doctors.delete({ where: { doctor_id: BigInt(id) } });
+        await tx.doctors.delete({ where: { doctor_id: Number(id) } });
         await tx.users.delete({ where: { user_id: doc.user_id } });
       }
     });
@@ -237,7 +268,7 @@ export class DoctorService {
     let doctor;
     if (userId) {
       doctor = await prisma.doctors.findUnique({
-        where: { user_id: BigInt(userId) },
+        where: { user_id: Number(userId) },
         include: { users: true, departments: true },
       });
     }
@@ -263,7 +294,7 @@ export class DoctorService {
   async updateProfile(userId: number | undefined, data: any) {
     let doctor;
     if (userId) {
-      doctor = await prisma.doctors.findUnique({ where: { user_id: BigInt(userId) } });
+      doctor = await prisma.doctors.findUnique({ where: { user_id: Number(userId) } });
     }
     if (!doctor) {
       doctor = await prisma.doctors.findFirst();

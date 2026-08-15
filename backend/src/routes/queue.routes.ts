@@ -12,5 +12,7 @@ router.post('/token', queueController.generateToken);
 router.post('/call-next', queueController.callNext);
 router.put('/:id/complete', queueController.completeConsultation);
 router.put('/:id/skip', queueController.skipPatient);
+router.put('/:id/emergency', queueController.markEmergency);
+router.put('/:id/status', queueController.updateStatus);
 
 export default router;

@@ -86,14 +86,14 @@ export default function EnterpriseSidebar({ open = false, onClose = () => {} }) 
       <div className="border-t border-gray-100 p-3 dark:border-[#1E293B] sm:p-4">
         <div className="flex items-center gap-3 rounded-xl border border-gray-100 bg-gray-50 p-3 dark:border-slate-700/50 dark:bg-slate-800/50">
           <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-green-600 text-sm font-bold text-white dark:bg-teal-600">
-            {loading ? '…' : initials}
+            {initials || 'R'}
           </div>
           <div className="min-w-0 flex-1">
             <p className="truncate text-sm font-semibold text-gray-800 dark:text-white">
-              {loading ? 'Loading...' : displayName}
+              {displayName || 'Receptionist'}
             </p>
             <p className="truncate text-xs text-gray-500 dark:text-slate-400">
-              {displayRole}
+              {displayRole || 'Reception Staff'}
             </p>
           </div>
         </div>

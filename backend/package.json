@@ -3,7 +3,7 @@
   "scripts": {
     "start": "node dist/server.js",
     "build": "tsc",
-    "dev": "nodemon --exec node --loader ts-node/esm src/server.ts"
+    "dev": "tsx watch src/server.ts"
   },
   "dependencies": {
     "@prisma/client": "^6.19.3",
@@ -26,9 +26,11 @@
     "nodemon": "^3.1.14",
     "prisma": "^6.19.3",
     "ts-node": "^10.9.2",
+    "tsx": "^4.23.12",
     "typescript": "^6.0.3"
   },
   "prisma": {
-    "schema": "src/prisma/schema.prisma"
+    "schema": "src/prisma/schema.prisma",
+    "seed": "node --loader ts-node/esm src/prisma/seed.ts"
   }
 }

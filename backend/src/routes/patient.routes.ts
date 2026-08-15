@@ -20,7 +20,9 @@ router.get('/appointments', patientController.getMyAppointments);
 router.post('/appointments', patientController.bookAppointment);
 router.patch('/appointments/:id/cancel', patientController.cancelMyAppointment);
 
-// Admin / Receptionist Routes
+// Admin / Receptionist / Doctor Routes
+router.post('/:id/complete', patientController.completePatientConsultation);
+router.put('/:id/complete', patientController.completePatientConsultation);
 router.get('/', patientController.getAllPatients);
 router.post('/', patientController.registerPatient);
 router.delete('/:id', patientController.deletePatient);

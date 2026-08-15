@@ -10,10 +10,10 @@ import { resolveHospitalIdForUser } from '../utils/tenant.js';
  * feed all read off this object.
  */
 function buildAppointmentEventPayload(opts: {
-  appointment: { appointment_id: bigint; doctor_id: bigint; patient_id: bigint; hospital_id: bigint; appointment_date: Date; appointment_status: string; appointment_type: string };
-  patient: { patient_id: bigint; full_name: string };
-  doctor: { doctor_id: bigint; full_name: string; department: string } | null;
-  token?: { token_id: bigint; token_code: string; queue_position: number; token_status: string } | null;
+  appointment: { appointment_id: number; doctor_id: number; patient_id: number; hospital_id: number; appointment_date: Date; appointment_status: string; appointment_type: string };
+  patient: { patient_id: number; full_name: string };
+  doctor: { doctor_id: number; full_name: string; department: string } | null;
+  token?: { token_id: number; token_code: string; queue_position: number; token_status: string } | null;
 }) {
   return {
     appointmentId: opts.appointment.appointment_id.toString(),
@@ -40,7 +40,6 @@ export class PatientController {
   // PATIENT APP ROUTES
   // ==========================
   
-  // Get patient profile for the logged in user
   async getProfile(req: Request, res: Response) {
     try {
       const user = (req as any).user; // from authMiddleware
@@ -49,12 +48,12 @@ export class PatientController {
       }
 
       let patient = await prisma.patients.findFirst({
-        where: { user_id: BigInt(user.userId) }
+        where: { user_id: Number(user.userId) }
       });
 
       if (!patient) {
         // Auto-heal: Create a patient record if it doesn't exist for this user
-        const userData = await prisma.users.findUnique({ where: { user_id: BigInt(user.userId) } });
+        const userData = await prisma.users.findUnique({ where: { user_id: Number(user.userId) } });
         if (!userData) {
           return res.status(404).json({ error: 'User not found' });
         }
@@ -113,11 +112,11 @@ export class PatientController {
       const abhaId = body.abhaId ?? body.abha_id;
 
       let patient = await prisma.patients.findFirst({
-        where: { user_id: BigInt(user.userId) }
+        where: { user_id: Number(user.userId) }
       });
 
       if (!patient) {
-        const userData = await prisma.users.findUnique({ where: { user_id: BigInt(user.userId) } });
+        const userData = await prisma.users.findUnique({ where: { user_id: Number(user.userId) } });
         if (!userData) {
           return res.status(404).json({ error: 'User not found' });
         }
@@ -154,7 +153,7 @@ export class PatientController {
 
       // Keep linked users row in sync
       await prisma.users.update({
-        where: { user_id: BigInt(user.userId) },
+        where: { user_id: Number(user.userId) },
         data: {
           ...(name !== undefined ? { full_name: String(name).trim() } : {}),
           ...(email !== undefined ? { email: email || undefined } : {}),
@@ -179,7 +178,7 @@ export class PatientController {
       }
 
       const patient = await prisma.patients.findFirst({
-        where: { user_id: BigInt(user.userId) }
+        where: { user_id: Number(user.userId) }
       });
 
       if (!patient) {
@@ -207,6 +206,16 @@ export class PatientController {
         orderBy: { appointment_date: 'desc' }
       });
 
+      const apptIds = appointments.map((a: any) => a.appointment_id);
+      const pairedTokens = await prisma.queue_tokens.findMany({
+        where: { appointment_id: { in: apptIds } }
+      });
+
+      const activeTokens = await prisma.queue_tokens.findMany({
+        where: { token_status: { in: ['Scheduled', 'Waiting', 'IN_PROGRESS'] } },
+        orderBy: { queue_position: 'asc' },
+      });
+
       const formatted = appointments.map((a: any) => {
         let patientName = a.patients?.full_name || patient.full_name;
         let bookingType: 'self' | 'other' = a.patient_id === patient.patient_id ? 'self' : 'other';
@@ -226,6 +235,43 @@ export class PatientController {
               ? a.doctors.users.full_name
               : `Dr. ${a.doctors.users.full_name}`)
           : 'Dr. Assigned';
+          
+        const docTokens = activeTokens.filter(t => t.doctor_id === a.doctor_id);
+        const myToken = docTokens.find(t => t.appointment_id === a.appointment_id);
+        const pairedTok = pairedTokens.find(t => t.appointment_id === a.appointment_id);
+        const tokenCode = myToken?.token_code || pairedTok?.token_code || `T${a.appointment_id.toString()}`;
+
+        // Include all active tokens for this doctor (now, same time, and later)
+        let allTokenCodes = docTokens.map(t => t.token_code);
+        if (tokenCode && !allTokenCodes.includes(tokenCode)) {
+          allTokenCodes.push(tokenCode);
+        }
+
+        const myTokenIndex = allTokenCodes.indexOf(tokenCode);
+        const queuePosition = myTokenIndex !== -1 ? myTokenIndex + 1 : (myToken?.queue_position || 1);
+        const estimatedWaitTime = (queuePosition - 1) * 15;
+        const liveQueueTokens = allTokenCodes;
+
+        const normApptStatus = (a.appointment_status || '').trim().toLowerCase();
+        const normTokStatus = (pairedTok?.token_status || '').trim().toLowerCase();
+        const isCancelled = ['cancelled', 'canceled'].includes(normApptStatus) || ['cancelled', 'canceled'].includes(normTokStatus);
+        const isCompleted = ['completed', 'checkedout', 'checked_out', 'done'].includes(normApptStatus) || 
+          ['completed', 'checkedout', 'checked_out', 'done'].includes(normTokStatus);
+        let effectiveStatus = a.appointment_status;
+        if (isCancelled) effectiveStatus = 'Cancelled';
+        else if (isCompleted) effectiveStatus = 'Completed';
+        else if (['upcoming', 'confirmed', 'scheduled', 'waiting', 'in progress', 'in_progress', 'active'].includes(normApptStatus)) {
+          effectiveStatus = 'Upcoming';
+        }
+
+        // Proactively sync appointment_status if token is completed
+        if (isCompleted && a.appointment_status !== 'Completed') {
+          prisma.appointments.update({
+            where: { appointment_id: a.appointment_id },
+            data: { appointment_status: 'Completed' }
+          }).catch(() => {});
+        }
+
 
         return {
           id: `APT-${a.appointment_id.toString()}`,
@@ -239,16 +285,29 @@ export class PatientController {
             year: 'numeric',
           }),
           time: a.appointment_date.toLocaleTimeString('en-US', {
-            hour: '2-digit',
+            hour: 'numeric',
             minute: '2-digit',
             hour12: true,
           }),
+          appointment_date: a.appointment_date.toISOString(),
           isoDate: a.appointment_date.toISOString(),
-          status: a.appointment_status,
+          status: effectiveStatus,
           bookingType,
           patientName,
           relationship,
           personId,
+          queuePosition,
+          estimatedWaitTime,
+          tokenCode,
+          token: {
+            tokenId: `T${a.appointment_id.toString()}`,
+            tokenCode,
+            queuePosition,
+            queue_position: queuePosition,
+            estimatedWaitTime,
+            estimated_wait_time: estimatedWaitTime,
+          },
+          liveQueueTokens: liveQueueTokens.length > 0 ? liveQueueTokens : [tokenCode],
         };
       });
 
@@ -274,14 +333,14 @@ export class PatientController {
       }
 
       const patient = await prisma.patients.findFirst({
-        where: { user_id: BigInt(user.userId) }
+        where: { user_id: Number(user.userId) }
       });
       if (!patient) {
         return res.status(404).json({ error: 'Patient profile not found' });
       }
 
       const appt = await prisma.appointments.findFirst({
-        where: { appointment_id: BigInt(idDigits), patient_id: patient.patient_id },
+        where: { appointment_id: Number(idDigits), patient_id: patient.patient_id },
         include: {
           doctors: { include: { users: true, departments: true } },
         },
@@ -304,22 +363,20 @@ export class PatientController {
         }),
       ]);
 
-      const payload = buildAppointmentEventPayload({
+      const eventPayload = buildAppointmentEventPayload({
         appointment: updated,
         patient: { patient_id: patient.patient_id, full_name: patient.full_name },
-        doctor: appt.doctors
-          ? {
-              doctor_id: appt.doctors.doctor_id,
-              full_name: appt.doctors.users?.full_name ?? 'Doctor',
-              department: appt.doctors.departments?.department_name ?? 'General',
-            }
-          : null,
+        doctor: {
+          doctor_id: appt.doctor_id,
+          full_name: appt.doctors?.users?.full_name ?? 'Doctor',
+          department: appt.doctors?.departments?.department_name ?? 'General',
+        },
       });
-      safeEmit('appointment_updated', payload);
+      safeEmit('appointment_updated', eventPayload);
       safeEmit('queue_updated', {
-        hospitalId: payload.hospitalId,
+        hospitalId: eventPayload.hospitalId,
         reason: 'token_cancelled',
-        appointmentId: payload.appointmentId,
+        appointmentId: eventPayload.appointmentId,
       });
 
       res.status(200).json({ data: { id: `APT-${updated.appointment_id.toString()}`, status: updated.appointment_status } });
@@ -350,7 +407,7 @@ export class PatientController {
       };
 
       const patient = await prisma.patients.findFirst({
-        where: { user_id: BigInt(user.userId) }
+        where: { user_id: Number(user.userId) }
       });
 
       if (!patient) {
@@ -399,22 +456,15 @@ export class PatientController {
         targetPatient = dependent;
       }
 
-      // Default to tomorrow 10:30 AM. Once the booking UI lets the
-      // user pick a slot, the body should carry an ISO date and this
-      // becomes the fallback.
-      const appointmentDate = new Date();
-      appointmentDate.setDate(appointmentDate.getDate() + 1);
-      appointmentDate.setHours(10, 30, 0, 0);
-
       const apptType = bookingType === 'other' ? `other: ${patientName ?? 'Guest'}` : 'self';
 
       // Resolve the doctor. The booking UI passes a string id like
       // "5" or "DOC-5"; pull out the digits and verify the doctor
       // actually exists so we don't create a token with an orphan FK.
-      let parsedDoctorId: bigint | null = null;
+      let parsedDoctorId: number | null = null;
       if (doctorId !== undefined && doctorId !== null) {
         const numMatch = String(doctorId).match(/\d+/);
-        if (numMatch) parsedDoctorId = BigInt(numMatch[0]);
+        if (numMatch) parsedDoctorId = Number(numMatch[0]);
       }
       const doctor = parsedDoctorId
         ? await prisma.doctors.findUnique({
@@ -426,18 +476,40 @@ export class PatientController {
         return res.status(400).json({ error: 'Selected doctor is not available' });
       }
 
-      // Queue position = waiting/scheduled tokens already in front of
-      // this patient with the same doctor. Cheap count; runs inside
-      // the transaction so two bookings landing at once still get
-      // monotonically increasing positions (worst case: brief
-      // contention, never a duplicate position).
+      // Dynamic slot allocation:
+      // Base start time: tomorrow at 10:30 AM
+      const baseDate = new Date();
+      baseDate.setDate(baseDate.getDate() + 1);
+      baseDate.setHours(10, 30, 0, 0);
+
+      // Check how many appointments already exist for this doctor on that date
+      const startOfDay = new Date(baseDate.getFullYear(), baseDate.getMonth(), baseDate.getDate(), 0, 0, 0);
+      const endOfDay = new Date(baseDate.getFullYear(), baseDate.getMonth(), baseDate.getDate() + 1, 0, 0, 0);
+
+      const existingAppointmentsCount = await prisma.appointments.count({
+        where: {
+          doctor_id: doctor.doctor_id,
+          appointment_status: { not: 'Cancelled' },
+          appointment_date: {
+            gte: startOfDay,
+            lt: endOfDay,
+          },
+        },
+      });
+
+      // Shift appointment slot by 15 minutes for each existing patient
+      const slotOffsetMinutes = existingAppointmentsCount * 15;
+      const appointmentDate = new Date(baseDate.getTime() + slotOffsetMinutes * 60 * 1000);
+
+      // Queue position = waiting/scheduled tokens already in front of this patient
       const existingActive = await prisma.queue_tokens.count({
         where: {
           doctor_id: doctor.doctor_id,
-          token_status: { in: ['Scheduled', 'Waiting'] },
+          token_status: { in: ['Scheduled', 'Waiting', 'IN_PROGRESS'] },
         },
       });
       const queuePosition = existingActive + 1;
+      const waitTime = existingActive * 15; // 0 mins for first patient, +15m for subsequent patients
 
       const [newAppointment, newToken] = await prisma.$transaction(async (tx) => {
         const appt = await tx.appointments.create({
@@ -463,11 +535,23 @@ export class PatientController {
             priority_score: 0,
             token_status: 'Scheduled',
             check_in_time: appointmentDate,
-            estimated_wait_time: queuePosition * 10,
+            estimated_wait_time: waitTime,
           },
         });
 
         return [appt, tok];
+      });
+
+      const tokenCode = `T${newAppointment.appointment_id.toString()}`;
+      const timeFormatted = appointmentDate.toLocaleTimeString('en-US', {
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true,
+      });
+      const dateFormatted = appointmentDate.toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
       });
 
       const eventPayload = buildAppointmentEventPayload({
@@ -491,11 +575,41 @@ export class PatientController {
         tokenId: eventPayload.tokenId,
       });
 
+      const responseData = {
+        id: `APT-${newAppointment.appointment_id.toString()}`,
+        appointment_id: newAppointment.appointment_id.toString(),
+        patient_id: targetPatient.patient_id.toString(),
+        doctor_id: doctor.doctor_id.toString(),
+        hospital_id: targetPatient.hospital_id.toString(),
+        appointment_date: appointmentDate.toISOString(),
+        appointment_status: newAppointment.appointment_status,
+        appointment_type: newAppointment.appointment_type,
+        date: dateFormatted,
+        time: timeFormatted,
+        isoDate: appointmentDate.toISOString(),
+        queuePosition: queuePosition,
+        estimatedWaitTime: waitTime,
+        tokenCode: tokenCode,
+        token: {
+          tokenId: `T${newAppointment.appointment_id.toString()}`,
+          token_id: newToken.token_id.toString(),
+          token_code: tokenCode,
+          tokenCode: tokenCode,
+          queue_position: queuePosition,
+          queuePosition: queuePosition,
+          priority_score: newToken.priority_score,
+          token_status: newToken.token_status,
+          estimated_wait_time: waitTime,
+          estimatedWaitTime: waitTime,
+        },
+      };
+
       res.status(201).json({
-        data: { ...newAppointment, token: newToken },
+        data: responseData,
         message: 'Appointment booked successfully'
       });
     } catch (error: any) {
+      console.error('[POST /patients/appointments]', error?.message || error);
       res.status(500).json({ error: error.message });
     }
   }
@@ -548,11 +662,18 @@ export class PatientController {
       const { name, age, gender, blood, phone, email, dept, doctor, address, condition, status } = req.body;
 
       // Find doctor by name or fallback to first doctor in the hospital
-      let doc = await prisma.doctors.findFirst({
-        where: { hospital_id: hospitalId, users: { full_name: { contains: doctor, mode: 'insensitive' } } },
-        include: { users: true, departments: true }
-      });
-      if (!doc) doc = await prisma.doctors.findFirst({ where: { hospital_id: hospitalId }, include: { users: true, departments: true } });
+      let doc = doctor
+        ? await prisma.doctors.findFirst({
+            where: { hospital_id: hospitalId, users: { full_name: { contains: doctor } } },
+            include: { users: true, departments: true }
+          })
+        : null;
+      if (!doc) {
+        doc = await prisma.doctors.findFirst({
+          where: { hospital_id: hospitalId },
+          include: { users: true, departments: true }
+        });
+      }
       if (!doc) {
         return res.status(400).json({ error: 'No doctors available in the system.' });
       }
@@ -603,7 +724,7 @@ export class PatientController {
         where: {
           OR: [
             { uhid: id },
-            { patient_id: !isNaN(Number(id)) ? BigInt(id) : -1n }
+            { patient_id: !isNaN(Number(id)) ? Number(id) : -1 }
           ]
         }
       });
@@ -621,6 +742,116 @@ export class PatientController {
       res.status(500).json({ error: error.message });
     }
   }
+
+  completePatientConsultation = async (req: Request, res: Response) => {
+    try {
+      const rawId = String(req.params.id || '').trim();
+      const cleanNumeric = rawId.replace(/^(APT-|T-|T|PT-|P-)/i, '');
+      const numId = Number(cleanNumeric);
+
+      console.log(`[completePatientConsultation] rawId=${rawId}, cleanNumeric=${cleanNumeric}`);
+
+      let token = null;
+      let targetAppointmentId: number | null = null;
+
+      // 1. Try finding by token_id
+      if (!isNaN(numId) && numId > 0) {
+        token = await prisma.queue_tokens.findUnique({
+          where: { token_id: numId }
+        });
+      }
+
+      // 2. Try finding by appointment_id in queue_tokens
+      if (!token && !isNaN(numId) && numId > 0) {
+        token = await prisma.queue_tokens.findFirst({
+          where: { appointment_id: numId }
+        });
+      }
+
+      // 3. Try finding by token_code
+      if (!token && rawId) {
+        token = await prisma.queue_tokens.findFirst({
+          where: { token_code: rawId }
+        });
+      }
+
+      if (token) {
+        targetAppointmentId = token.appointment_id;
+      }
+
+      // 4. Try finding appointment directly
+      if (!targetAppointmentId && !isNaN(numId) && numId > 0) {
+        const appt = await prisma.appointments.findUnique({
+          where: { appointment_id: numId }
+        });
+        if (appt) {
+          targetAppointmentId = appt.appointment_id;
+        }
+      }
+
+      // 5. Try finding active appointment for patient_id
+      if (!targetAppointmentId && !isNaN(numId) && numId > 0) {
+        const appt = await prisma.appointments.findFirst({
+          where: {
+            patient_id: numId,
+            appointment_status: { in: ['Upcoming', 'Confirmed', 'CONFIRMED', 'Scheduled', 'In Progress', 'Waiting', 'Active'] }
+          },
+          orderBy: { appointment_id: 'desc' }
+        });
+        if (appt) {
+          targetAppointmentId = appt.appointment_id;
+        }
+      }
+
+      // Mark appointment completed
+      if (targetAppointmentId) {
+        await prisma.appointments.update({
+          where: { appointment_id: targetAppointmentId },
+          data: { appointment_status: 'Completed' }
+        }).catch(() => {});
+      } else if (!isNaN(numId) && numId > 0) {
+        await prisma.appointments.updateMany({
+          where: {
+            patient_id: numId,
+            appointment_status: { in: ['Upcoming', 'Confirmed', 'CONFIRMED', 'Scheduled', 'In Progress', 'Waiting', 'Active'] }
+          },
+          data: { appointment_status: 'Completed' }
+        }).catch(() => {});
+      }
+
+      // Mark queue token completed
+      if (token) {
+        await prisma.queue_tokens.update({
+          where: { token_id: token.token_id },
+          data: { token_status: 'COMPLETED' }
+        }).catch(() => {});
+      } else if (targetAppointmentId) {
+        await prisma.queue_tokens.updateMany({
+          where: { appointment_id: targetAppointmentId },
+          data: { token_status: 'COMPLETED' }
+        }).catch(() => {});
+      }
+
+      safeEmit('consultation_completed', {
+        tokenId: String(token?.token_id || rawId),
+        appointmentId: targetAppointmentId ? String(targetAppointmentId) : undefined
+      });
+      safeEmit('appointment_updated', {
+        appointmentId: targetAppointmentId ? String(targetAppointmentId) : undefined,
+        status: 'Completed'
+      });
+      safeEmit('queue_updated', {
+        hospitalId: String(token?.hospital_id || 1),
+        doctorId: token?.doctor_id?.toString(),
+        reason: 'consultation_completed'
+      });
+
+      res.status(200).json({ success: true, message: 'Consultation completed successfully' });
+    } catch (error: any) {
+      console.error('[completePatientConsultation error]', error);
+      res.status(500).json({ error: error.message });
+    }
+  };
 }
 
 export const patientController = new PatientController();

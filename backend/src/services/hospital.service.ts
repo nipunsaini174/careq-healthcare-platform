@@ -54,7 +54,7 @@ export class HospitalService {
    * Returns the hospital row + nested departments. Used by the admin
    * settings page and by anything that needs a snapshot of one hospital.
    */
-  async getHospitalById(hospitalId: bigint) {
+  async getHospitalById(hospitalId: number) {
     const hospital = await prisma.hospitals.findUnique({
       where: { hospital_id: hospitalId },
       include: {
@@ -78,7 +78,7 @@ export class HospitalService {
    * caller supplies are touched — undefined keys are ignored so this is
    * safe for a PATCH-style payload from the settings form.
    */
-  async updateHospital(hospitalId: bigint, patch: HospitalProfileUpdate) {
+  async updateHospital(hospitalId: number, patch: HospitalProfileUpdate) {
     validateProfile(patch);
 
     const data: HospitalProfileUpdate = {};
@@ -129,7 +129,7 @@ export class HospitalService {
     }));
   }
 
-  async listDepartments(hospitalId: bigint) {
+  async listDepartments(hospitalId: number) {
     return prisma.departments.findMany({
       where: { hospital_id: hospitalId },
       orderBy: { department_id: 'asc' },
@@ -142,7 +142,7 @@ export class HospitalService {
     });
   }
 
-  async addDepartment(hospitalId: bigint, payload: { name: string; location?: string; dailyCapacity?: number }) {
+  async addDepartment(hospitalId: number, payload: { name: string; location?: string; dailyCapacity?: number }) {
     const name = (payload.name ?? '').trim();
     if (!name) throw new Error('Department name is required');
     if (name.length > MAX_STRING_LEN) throw new Error(`Department name exceeds ${MAX_STRING_LEN} characters`);
@@ -153,7 +153,7 @@ export class HospitalService {
     const existing = await prisma.departments.findFirst({
       where: {
         hospital_id: hospitalId,
-        department_name: { equals: name, mode: 'insensitive' },
+        department_name: { equals: name },
       },
     });
     if (existing) throw new Error(`Department "${name}" already exists for this hospital`);
@@ -179,7 +179,7 @@ export class HospitalService {
    * This is the hospital-scoped guard that stops admin A from deleting
    * hospital B's departments by guessing IDs.
    */
-  async deleteDepartment(hospitalId: bigint, departmentId: bigint) {
+  async deleteDepartment(hospitalId: number, departmentId: number) {
     const dept = await prisma.departments.findUnique({
       where: { department_id: departmentId },
     });

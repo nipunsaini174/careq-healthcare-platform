@@ -72,7 +72,7 @@ export class NotificationController {
       }
 
       const notifications = await prisma.notifications.findMany({
-        where: { user_id: BigInt(user.userId) },
+        where: { user_id: Number(user.userId) },
         orderBy: { created_at: 'desc' },
       });
 
@@ -102,8 +102,8 @@ export class NotificationController {
 
       await prisma.notifications.updateMany({
         where: { 
-          notification_id: BigInt(id as string),
-          user_id: BigInt(user.userId) 
+          notification_id: Number(id as string),
+          user_id: Number(user.userId) 
         },
         data: { is_read: true }
       });
@@ -124,7 +124,7 @@ export class NotificationController {
       }
 
       await prisma.notifications.updateMany({
-        where: { user_id: BigInt(user.userId), is_read: false },
+        where: { user_id: Number(user.userId), is_read: false },
         data: { is_read: true }
       });
 

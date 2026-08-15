@@ -10,7 +10,7 @@ export class QueueService {
     return 10; // Walk-in
   }
 
-  async getQueueForDoctor(hospitalId: bigint, doctorId?: bigint) {
+  async getQueueForDoctor(hospitalId: number, doctorId?: number) {
     try {
       const whereClause: any = {
         hospital_id: hospitalId,
@@ -60,7 +60,7 @@ export class QueueService {
         waitingQueue: mappedWaiting,
         totalWaiting: waiting.length,
         totalServing: serving ? 1 : 0,
-        estimatedWaitMinutes: waiting.length * 10,
+        estimatedWaitMinutes: waiting.length * 15,
       };
     } catch (err) {
       console.warn("DB query failed in getQueueForDoctor, returning zero-baseline queue state:", err);
@@ -83,15 +83,15 @@ export class QueueService {
     priority_type?: string; // 'EMERGENCY' | 'SENIOR_CITIZEN' | 'APPOINTMENT' | 'WALK_IN'
     is_senior?: boolean;
   }) {
-    const hospId = BigInt(data.hospital_id);
-    const docId = BigInt(data.doctor_id);
+    const hospId = Number(data.hospital_id);
+    const docId = Number(data.doctor_id);
     const priorityScore = this.calculatePriorityScore(data.priority_type || 'WALK_IN', data.is_senior);
 
     try {
       // Create walk-in patient if needed
-      let patId: bigint;
+      let patId: number;
       const firstPat = await prisma.patients.findFirst();
-      patId = firstPat ? firstPat.patient_id : BigInt(1);
+      patId = firstPat ? firstPat.patient_id : Number(1);
 
       const existingCount = await prisma.queue_tokens.count({
         where: { doctor_id: docId, token_status: 'WAITING' },
@@ -111,7 +111,7 @@ export class QueueService {
           priority_score: priorityScore,
           token_status: 'WAITING',
           check_in_time: new Date(),
-          estimated_wait_time: (existingCount + 1) * 10,
+          estimated_wait_time: (existingCount + 1) * 15,
         },
       });
 
@@ -136,7 +136,7 @@ export class QueueService {
         tokenCode: "W-001",
         queuePosition: 1,
         priorityScore,
-        estimatedWaitTime: 10,
+        estimatedWaitTime: 15,
         patientName: data.patient_name || 'Walk-in Patient',
       };
       safeEmit('token_generated', dto);
@@ -145,7 +145,7 @@ export class QueueService {
     }
   }
 
-  async callNextPatient(hospitalId: bigint, doctorId: bigint) {
+  async callNextPatient(hospitalId: number, doctorId: number) {
     try {
       // Find highest priority WAITING token
       const nextToken = await prisma.queue_tokens.findFirst({
@@ -189,26 +189,47 @@ export class QueueService {
   }
 
   async completeConsultation(tokenId: string) {
-    const id = BigInt(tokenId);
+    const id = Number(tokenId);
     try {
       const updated = await prisma.queue_tokens.update({
         where: { token_id: id },
         data: { token_status: 'COMPLETED' },
       });
 
-      safeEmit('consultation_completed', { tokenId });
+      if (updated.appointment_id) {
+        await prisma.appointments.update({
+          where: { appointment_id: updated.appointment_id },
+          data: { appointment_status: 'Completed' }
+        }).catch((err) => console.warn('Could not mark appointment completed:', err));
+      } else if (updated.patient_id && updated.doctor_id) {
+        await prisma.appointments.updateMany({
+          where: {
+            patient_id: updated.patient_id,
+            doctor_id: updated.doctor_id,
+            appointment_status: { in: ['Upcoming', 'Confirmed', 'CONFIRMED', 'In Progress', 'Scheduled', 'Waiting'] }
+          },
+          data: { appointment_status: 'Completed' }
+        }).catch((err) => console.warn('Could not mark appointment completed by patient/doc:', err));
+      }
+
+      safeEmit('consultation_completed', { tokenId, appointmentId: updated.appointment_id ? String(updated.appointment_id) : undefined });
+      safeEmit('appointment_updated', {
+        appointmentId: updated.appointment_id ? String(updated.appointment_id) : undefined,
+        status: 'Completed'
+      });
       safeEmit('queue_updated', { hospitalId: String(updated.hospital_id), doctorId: String(updated.doctor_id) });
 
       return { success: true, message: 'Consultation marked as completed' };
     } catch (err) {
       console.warn("DB completeConsultation failed:", err);
       safeEmit('consultation_completed', { tokenId });
+      safeEmit('appointment_updated', { status: 'Completed' });
       return { success: true, message: 'Consultation completed' };
     }
   }
 
   async skipPatient(tokenId: string) {
-    const id = BigInt(tokenId);
+    const id = Number(tokenId);
     try {
       const updated = await prisma.queue_tokens.update({
         where: { token_id: id },
@@ -220,6 +241,63 @@ export class QueueService {
     } catch (err) {
       console.warn("DB skipPatient failed:", err);
       return { success: true, message: 'Patient skipped' };
+    }
+  }
+
+  async markEmergency(tokenId: string) {
+    const id = Number(tokenId);
+    try {
+      const updated = await prisma.queue_tokens.update({
+        where: { token_id: id },
+        data: { 
+          token_type: 'EMERGENCY',
+          priority_score: 100
+        },
+      });
+
+      safeEmit('queue_updated', { hospitalId: String(updated.hospital_id), doctorId: String(updated.doctor_id) });
+      return { success: true, message: 'Patient marked as Emergency' };
+    } catch (err) {
+      console.warn("DB markEmergency failed:", err);
+      return { success: false, message: 'Failed to mark emergency' };
+    }
+  }
+
+  async updateTokenStatus(tokenId: string, newStatus: string) {
+    const id = Number(tokenId);
+    try {
+      const updated = await prisma.queue_tokens.update({
+        where: { token_id: id },
+        data: { token_status: newStatus },
+      });
+
+      if (['COMPLETED', 'Completed', 'CheckedOut', 'checked_out'].includes(newStatus)) {
+        if (updated.appointment_id) {
+          await prisma.appointments.update({
+            where: { appointment_id: updated.appointment_id },
+            data: { appointment_status: 'Completed' }
+          }).catch((err) => console.warn('Could not mark appointment completed:', err));
+        } else if (updated.patient_id && updated.doctor_id) {
+          await prisma.appointments.updateMany({
+            where: {
+              patient_id: updated.patient_id,
+              doctor_id: updated.doctor_id,
+              appointment_status: { in: ['Upcoming', 'Confirmed', 'CONFIRMED', 'In Progress', 'Scheduled', 'Waiting'] }
+            },
+            data: { appointment_status: 'Completed' }
+          }).catch((err) => console.warn('Could not mark appointment completed:', err));
+        }
+        safeEmit('appointment_updated', {
+          appointmentId: updated.appointment_id ? String(updated.appointment_id) : undefined,
+          status: 'Completed'
+        });
+      }
+
+      safeEmit('queue_updated', { hospitalId: String(updated.hospital_id), doctorId: String(updated.doctor_id) });
+      return { success: true, message: `Status updated to ${newStatus}` };
+    } catch (err) {
+      console.warn("DB updateTokenStatus failed:", err);
+      return { success: false, message: 'Failed to update status' };
     }
   }
 }

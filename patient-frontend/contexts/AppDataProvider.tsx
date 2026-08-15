@@ -143,6 +143,7 @@ function SocketCacheBridge() {
     // Queue / appointment updates — refresh appointments list
     const onQueueUpdate = () => {
       qc.invalidateQueries({ queryKey: QK.appointments });
+      qc.refetchQueries({ queryKey: QK.appointments });
     };
 
     socket.on("doctor_created", onDoctorCreated);
@@ -153,6 +154,8 @@ function SocketCacheBridge() {
     socket.on("queue_updated", onQueueUpdate);
     socket.on("appointment_updated", onQueueUpdate);
     socket.on("appointment_created", onQueueUpdate);
+    socket.on("consultation_completed", onQueueUpdate);
+    socket.on("appointment_cancelled", onQueueUpdate);
 
     return () => {
       socket.off("doctor_created", onDoctorCreated);
@@ -163,6 +166,8 @@ function SocketCacheBridge() {
       socket.off("queue_updated", onQueueUpdate);
       socket.off("appointment_updated", onQueueUpdate);
       socket.off("appointment_created", onQueueUpdate);
+      socket.off("consultation_completed", onQueueUpdate);
+      socket.off("appointment_cancelled", onQueueUpdate);
       bridgeInstalled.current = false;
     };
   }, [qc]);

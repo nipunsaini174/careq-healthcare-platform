@@ -8,7 +8,7 @@ export function formatPatientForSocket(p: {
   patient_status: string;
   phone: string | null;
   email: string | null;
-  hospital_id: bigint;
+  hospital_id: number;
 }) {
   return {
     id: p.uhid,

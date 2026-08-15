@@ -3,29 +3,28 @@ generator client {
 }
 
 datasource db {
-  provider  = "postgresql"
-  url       = env("DATABASE_URL")
-  directUrl = env("DIRECT_URL")
+  provider = "sqlite"
+  url = "file:./dev.db"
 }
 
 model admins {
-  admin_id    BigInt    @id @default(autoincrement())
-  user_id     BigInt    @unique
-  hospital_id BigInt    @unique
-  admin_level String    @db.VarChar
-  permissions Json
+  admin_id    Int    @id @default(autoincrement())
+  user_id     Int    @unique
+  hospital_id Int    @unique
+  admin_level String    
+  permissions String
   hospitals   hospitals @relation(fields: [hospital_id], references: [hospital_id])
   users       users     @relation(fields: [user_id], references: [user_id])
 }
 
 model appointments {
-  appointment_id          BigInt                   @id @default(autoincrement())
-  patient_id              BigInt
-  doctor_id               BigInt
-  hospital_id             BigInt
+  appointment_id          Int                   @id @default(autoincrement())
+  patient_id              Int
+  doctor_id               Int
+  hospital_id             Int
   appointment_date        DateTime
-  appointment_type        String                   @db.VarChar
-  appointment_status      String                   @db.VarChar
+  appointment_type        String                   
+  appointment_status      String                   
   created_at              DateTime                 @default(now())
   doctors                 doctors                  @relation(fields: [doctor_id], references: [doctor_id])
   hospitals               hospitals                @relation(fields: [hospital_id], references: [hospital_id])
@@ -35,12 +34,12 @@ model appointments {
 }
 
 model billing_invoices {
-  invoice_id      BigInt        @id @default(autoincrement())
-  patient_id      BigInt
-  hospital_id     BigInt
-  consultation_id BigInt        @unique
-  amount          Decimal       @db.Decimal
-  payment_status  String        @db.VarChar
+  invoice_id      Int        @id @default(autoincrement())
+  patient_id      Int
+  hospital_id     Int
+  consultation_id Int        @unique
+  amount          Float       
+  payment_status  String        
   invoice_date    DateTime
   consultations   consultations @relation(fields: [consultation_id], references: [consultation_id])
   hospitals       hospitals     @relation(fields: [hospital_id], references: [hospital_id])
@@ -48,18 +47,18 @@ model billing_invoices {
 }
 
 model consultations {
-  consultation_id         BigInt                    @id @default(autoincrement())
-  patient_id              BigInt
-  doctor_id               BigInt
-  token_id                BigInt                    @unique
+  consultation_id         Int                    @id @default(autoincrement())
+  patient_id              Int
+  doctor_id               Int
+  token_id                Int                    @unique
   reason_for_visit        String
   clinical_alerts         String
-  stage                   String                    @db.VarChar
+  stage                   String                    
   consultation_notes      String
   start_time              DateTime
   end_time                DateTime
   duration                Int
-  consultation_status     String                    @db.VarChar
+  consultation_status     String                    
   billing_invoices        billing_invoices?
   doctors                 doctors                   @relation(fields: [doctor_id], references: [doctor_id])
   patients                patients                  @relation(fields: [patient_id], references: [patient_id])
@@ -69,10 +68,10 @@ model consultations {
 }
 
 model departments {
-  department_id   BigInt    @id @default(autoincrement())
-  hospital_id     BigInt
-  department_name String    @db.VarChar
-  location        String    @db.VarChar
+  department_id   Int    @id @default(autoincrement())
+  hospital_id     Int
+  department_name String    
+  location        String    
   daily_capacity  Int
   created_at      DateTime  @default(now())
   hospitals       hospitals @relation(fields: [hospital_id], references: [hospital_id])
@@ -80,22 +79,22 @@ model departments {
 }
 
 model doctors {
-  doctor_id               BigInt                    @id @default(autoincrement())
-  user_id                 BigInt                    @unique
-  hospital_id             BigInt
-  department_id           BigInt
-  specialization          String                    @db.VarChar
-  qualification           String                    @db.VarChar
+  doctor_id               Int                    @id @default(autoincrement())
+  user_id                 Int                    @unique
+  hospital_id             Int
+  department_id           Int
+  specialization          String                    
+  qualification           String                    
   experience_years        Int
-  rating                  Decimal                   @db.Decimal
-  availability_status     String                    @db.VarChar
-  phone                   String?                   @db.VarChar
-  opd                     String?                   @db.VarChar
-  schedule                String?                   @db.VarChar
+  rating                  Float                   
+  availability_status     String                    
+  phone                   String?                   
+  opd                     String?                   
+  schedule                String?                   
   bio                     String?
   focus                   String?
   credentials             String?
-  room                    String?                   @db.VarChar
+  room                    String?                   
   awards                  String?
   appointments            appointments[]
   consultations           consultations[]
@@ -110,18 +109,18 @@ model doctors {
 }
 
 model follow_up_consultations {
-  followup_id            BigInt        @id @default(autoincrement())
-  parent_consultation_id BigInt
-  patient_id             BigInt
-  doctor_id              BigInt
-  hospital_id            BigInt
-  appointment_id         BigInt?       @unique
-  token_id               BigInt?       @unique
+  followup_id            Int        @id @default(autoincrement())
+  parent_consultation_id Int
+  patient_id             Int
+  doctor_id              Int
+  hospital_id            Int
+  appointment_id         Int?       @unique
+  token_id               Int?       @unique
   revisit_reason         String
   test_results_attached  Boolean
   planned_duration_mins  Int
   followup_notes         String
-  followup_status        String        @db.VarChar
+  followup_status        String        
   appointments           appointments? @relation(fields: [appointment_id], references: [appointment_id])
   doctors                doctors       @relation(fields: [doctor_id], references: [doctor_id])
   hospitals              hospitals     @relation(fields: [hospital_id], references: [hospital_id])
@@ -131,14 +130,14 @@ model follow_up_consultations {
 }
 
 model hospitals {
-  hospital_id             BigInt                    @id @default(autoincrement())
-  hospital_name           String                    @db.VarChar
-  registration_no         String                    @db.VarChar
-  branch_name             String                    @db.VarChar
+  hospital_id             Int                    @id @default(autoincrement())
+  hospital_name           String                    
+  registration_no         String                    
+  branch_name             String                    
   address                 String
-  phone                   String                    @db.VarChar
-  email                   String                    @db.VarChar
-  working_hours           String                    @db.VarChar
+  phone                   String                    
+  email                   String                    
+  working_hours           String                    
   created_at              DateTime                  @default(now())
   admins                  admins?
   appointments            appointments[]
@@ -153,19 +152,23 @@ model hospitals {
   receptionists           receptionists[]
   users                   users[]
   walk_in_patients        walk_in_patients[]
+  treatment_journeys      treatment_journeys[]
+  risk_assessments        risk_assessments[]
+  interventions           interventions[]
+  retention_followups     retention_followups[]
 }
 
 model lab_reports {
-  report_id       BigInt         @id @default(autoincrement())
-  patient_id      BigInt
-  doctor_id       BigInt
-  hospital_id     BigInt
-  consultation_id BigInt?
-  report_type     String         @db.VarChar(50)
-  report_name     String         @db.VarChar(150)
+  report_id       Int         @id @default(autoincrement())
+  patient_id      Int
+  doctor_id       Int
+  hospital_id     Int
+  consultation_id Int?
+  report_type     String         
+  report_name     String         
   report_file_url String
-  uploaded_by     String         @db.VarChar(20)
-  report_status   String         @db.VarChar(20)
+  uploaded_by     String         
+  report_status   String         
   uploaded_at     DateTime
   reviewed_at     DateTime?
   created_at      DateTime       @default(now())
@@ -176,13 +179,13 @@ model lab_reports {
 }
 
 model notifications {
-  notification_id BigInt    @id @default(autoincrement())
-  hospital_id     BigInt
-  user_id         BigInt
-  category        String    @db.VarChar
-  title           String    @db.VarChar
+  notification_id Int    @id @default(autoincrement())
+  hospital_id     Int
+  user_id         Int
+  category        String    
+  title           String    
   message         String
-  severity        String    @db.VarChar
+  severity        String    
   is_read         Boolean   @default(false)
   created_at      DateTime  @default(now())
   hospitals       hospitals @relation(fields: [hospital_id], references: [hospital_id])
@@ -190,21 +193,21 @@ model notifications {
 }
 
 model patients {
-  patient_id              BigInt                    @id @default(autoincrement())
-  hospital_id             BigInt
-  primary_doctor_id       BigInt?
-  uhid                    String                    @db.VarChar
-  full_name               String                    @db.VarChar
+  patient_id              Int                    @id @default(autoincrement())
+  hospital_id             Int
+  primary_doctor_id       Int?
+  uhid                    String                    
+  full_name               String                    
   age                     Int
-  gender                  String                    @db.VarChar
-  blood_group             String                    @db.VarChar
-  billing_status          String                    @db.VarChar
-  patient_status          String                    @db.VarChar
-  abha_id                 String?                   @db.VarChar
-  dob                     String?                   @db.VarChar
-  email                   String?                   @db.VarChar
-  phone                   String?                   @db.VarChar
-  user_id                 BigInt?                   @unique
+  gender                  String                    
+  blood_group             String                    
+  billing_status          String                    
+  patient_status          String                    
+  abha_id                 String?                   
+  dob                     String?                   
+  email                   String?                   
+  phone                   String?                   
+  user_id                 Int?                   @unique
   appointments            appointments[]
   billing_invoices        billing_invoices[]
   consultations           consultations[]
@@ -215,6 +218,10 @@ model patients {
   doctors                 doctors?                  @relation(fields: [primary_doctor_id], references: [doctor_id])
   users                   users?                    @relation(fields: [user_id], references: [user_id])
   queue_tokens            queue_tokens[]
+  treatment_journeys      treatment_journeys[]
+  risk_assessments        risk_assessments[]
+  interventions           interventions[]
+  retention_followups     retention_followups[]
 }
 
 /// Family members / dependents that an account owner (the `patients` row linked
@@ -227,15 +234,15 @@ model patients {
 /// these tables without UI changes. When wiring the backend, also add a nullable
 /// `profile_id` FK on `appointments` and `lab_reports` referencing this model.
 model patient_profiles {
-  profile_id       BigInt   @id @default(autoincrement())
+  profile_id       Int   @id @default(autoincrement())
   /// the account owner this dependent belongs to
-  owner_patient_id BigInt
-  hospital_id      BigInt
-  full_name        String   @db.VarChar
+  owner_patient_id Int
+  hospital_id      Int
+  full_name        String   
   /// "Self", "Father", "Mother", or any user-defined custom relation
-  relationship     String   @db.VarChar
+  relationship     String   
   age              Int?
-  gender           String?  @db.VarChar
+  gender           String?  
   is_self          Boolean  @default(false)
   created_at       DateTime @default(now())
   patients         patients @relation(fields: [owner_patient_id], references: [patient_id])
@@ -244,17 +251,17 @@ model patient_profiles {
 }
 
 model queue_tokens {
-  token_id                BigInt                   @id @default(autoincrement())
-  patient_id              BigInt
-  doctor_id               BigInt
-  hospital_id             BigInt
-  appointment_id          BigInt?                  @unique
-  walkin_id               BigInt?
-  token_code              String                   @db.VarChar
-  token_type              String                   @db.VarChar
+  token_id                Int                   @id @default(autoincrement())
+  patient_id              Int
+  doctor_id               Int
+  hospital_id             Int
+  appointment_id          Int?                  @unique
+  walkin_id               Int?
+  token_code              String                   
+  token_type              String                   
   queue_position          Int
   priority_score          Int
-  token_status            String                   @db.VarChar
+  token_status            String                   
   check_in_time           DateTime
   estimated_wait_time     Int
   consultations           consultations?
@@ -267,50 +274,149 @@ model queue_tokens {
 }
 
 model receptionists {
-  receptionist_id  BigInt             @id @default(autoincrement())
-  user_id          BigInt             @unique
-  hospital_id      BigInt
-  shift_start      DateTime           @db.Time(6)
-  shift_end        DateTime           @db.Time(6)
-  status           String             @db.VarChar
+  receptionist_id  Int             @id @default(autoincrement())
+  user_id          Int             @unique
+  hospital_id      Int
+  shift_start      DateTime           
+  shift_end        DateTime           
+  status           String             
   hospitals        hospitals          @relation(fields: [hospital_id], references: [hospital_id])
   users            users              @relation(fields: [user_id], references: [user_id])
   walk_in_patients walk_in_patients[]
 }
 
 model users {
-  user_id       BigInt          @id @default(autoincrement())
-  hospital_id   BigInt
-  full_name     String          @db.VarChar
-  email         String          @db.VarChar
+  user_id       Int          @id @default(autoincrement())
+  hospital_id   Int
+  full_name     String          
+  email         String          
   password_hash String
-  role          String          @db.VarChar
-  status        String          @db.VarChar
+  role          String          
+  status        String          
   last_login    DateTime?
-  phone         String?         @db.VarChar
+  phone         String?         
   admins        admins?
   doctors       doctors?
   notifications notifications[]
   patients      patients?
   receptionists receptionists?
   hospitals     hospitals       @relation(fields: [hospital_id], references: [hospital_id])
+  interventions interventions[]
 }
 
 model walk_in_patients {
-  walkin_id         BigInt         @id @default(autoincrement())
-  hospital_id       BigInt
-  receptionist_id   BigInt
-  doctor_id         BigInt
-  full_name         String         @db.VarChar
+  walkin_id         Int         @id @default(autoincrement())
+  hospital_id       Int
+  receptionist_id   Int
+  doctor_id         Int
+  full_name         String         
   age               Int
   is_senior_citizen Boolean
   reason_for_visit  String
   arrival_time      DateTime
-  placement_type    String         @db.VarChar
+  placement_type    String         
   priority_score    Int
-  walkin_status     String         @db.VarChar
+  walkin_status     String         
   queue_tokens      queue_tokens[]
   doctors           doctors        @relation(fields: [doctor_id], references: [doctor_id])
   hospitals         hospitals      @relation(fields: [hospital_id], references: [hospital_id])
   receptionists     receptionists  @relation(fields: [receptionist_id], references: [receptionist_id])
+}
+
+model diseases {
+  disease_id          Int                @id @default(autoincrement())
+  disease_name        String                
+  disease_type        String                
+  treatment_journeys  treatment_journeys[]
+}
+
+model treatment_journeys {
+  journey_id             Int                @id @default(autoincrement())
+  patient_id             Int
+  hospital_id            Int
+  disease_id             Int
+  status                 String                
+  start_date             DateTime
+  last_visit_date        DateTime?
+  next_followup_date     DateTime?
+  missed_appointments    Int                   @default(0)
+  adherence_score        Int                   @default(100)
+  consecutive_missed     Int                   @default(0)
+  total_appointments     Int                   @default(0)
+  completed_appointments Int                   @default(0)
+  average_visit_gap_days Int?
+  
+  patients               patients              @relation(fields: [patient_id], references: [patient_id])
+  hospitals              hospitals             @relation(fields: [hospital_id], references: [hospital_id])
+  diseases               diseases              @relation(fields: [disease_id], references: [disease_id])
+  
+  risk_assessments       risk_assessments[]
+  interventions          interventions[]
+  retention_followups    retention_followups[]
+}
+
+model risk_assessments {
+  assessment_id      Int         @id @default(autoincrement())
+  journey_id         Int
+  patient_id         Int
+  hospital_id        Int
+  risk_score         Int
+  risk_level         String         
+  model_version      String         
+  recommended_action String         
+  prediction_date    DateTime       @default(now())
+  
+  treatment_journeys treatment_journeys @relation(fields: [journey_id], references: [journey_id])
+  patients           patients       @relation(fields: [patient_id], references: [patient_id])
+  hospitals          hospitals      @relation(fields: [hospital_id], references: [hospital_id])
+  risk_factors       risk_factors[]
+  interventions      interventions[]
+}
+
+model risk_factors {
+  factor_id     Int           @id @default(autoincrement())
+  assessment_id Int
+  factor_name   String           
+  factor_value  String           
+  contribution  Int
+  
+  risk_assessments risk_assessments @relation(fields: [assessment_id], references: [assessment_id])
+}
+
+model interventions {
+  intervention_id   Int           @id @default(autoincrement())
+  patient_id        Int
+  journey_id        Int
+  assessment_id     Int
+  hospital_id       Int
+  assigned_to       Int?
+  intervention_type String           
+  priority          String           
+  status            String           
+  recommended_by_ai Boolean
+  outcome           String?          
+  outcome_notes     String?
+  created_at        DateTime         @default(now())
+  completed_at      DateTime?
+  
+  patients           patients           @relation(fields: [patient_id], references: [patient_id])
+  treatment_journeys treatment_journeys @relation(fields: [journey_id], references: [journey_id])
+  risk_assessments   risk_assessments   @relation(fields: [assessment_id], references: [assessment_id])
+  hospitals          hospitals          @relation(fields: [hospital_id], references: [hospital_id])
+  assigned_user      users?             @relation(fields: [assigned_to], references: [user_id])
+}
+
+model retention_followups {
+  followup_id    Int             @id @default(autoincrement())
+  patient_id     Int
+  journey_id     Int
+  hospital_id    Int
+  scheduled_date DateTime
+  completed_date DateTime?
+  status         String             
+  notes          String?
+  
+  patients           patients           @relation(fields: [patient_id], references: [patient_id])
+  treatment_journeys treatment_journeys @relation(fields: [journey_id], references: [journey_id])
+  hospitals          hospitals          @relation(fields: [hospital_id], references: [hospital_id])
 }

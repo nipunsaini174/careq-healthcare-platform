@@ -4,12 +4,16 @@ import { useEffect } from "react";
 import { io, Socket } from "socket.io-client";
 import { toast } from "sonner";
 import { Info, AlertTriangle, AlertCircle } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
+import { QK } from "@/contexts/AppDataProvider";
 
 const SOCKET_URL = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000").replace(/\/api$/, "");
 
 let socket: Socket | null = null;
 
 export function NotificationListener() {
+  const queryClient = useQueryClient();
+
   useEffect(() => {
     // Connect to the backend Socket.io
     socket = io(SOCKET_URL, {
@@ -22,6 +26,18 @@ export function NotificationListener() {
       // Join the global patients room to receive broadcasts
       socket?.emit("join_patient_room");
     });
+
+    // Real-time queue and appointment sync
+    const handleQueueSync = () => {
+      queryClient.invalidateQueries({ queryKey: QK.appointments });
+      queryClient.refetchQueries({ queryKey: QK.appointments });
+    };
+
+    socket.on("queue_updated", handleQueueSync);
+    socket.on("consultation_completed", handleQueueSync);
+    socket.on("appointment_created", handleQueueSync);
+    socket.on("appointment_updated", handleQueueSync);
+    socket.on("appointment_cancelled", handleQueueSync);
 
     // Listen for broadcast events
     socket.on("broadcast_notification", (data: { title: string; message: string; type: string }) => {
@@ -52,9 +68,14 @@ export function NotificationListener() {
     });
 
     return () => {
+      socket?.off("queue_updated", handleQueueSync);
+      socket?.off("consultation_completed", handleQueueSync);
+      socket?.off("appointment_created", handleQueueSync);
+      socket?.off("appointment_updated", handleQueueSync);
+      socket?.off("appointment_cancelled", handleQueueSync);
       socket?.disconnect();
     };
-  }, []);
+  }, [queryClient]);
 
   // This component doesn't render anything visible directly
   return null;

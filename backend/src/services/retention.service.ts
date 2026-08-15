@@ -7,7 +7,7 @@ export const retentionService = {
   /**
    * Get retention dashboard summary for a hospital
    */
-  async getDashboardSummary(hospitalId: bigint) {
+  async getDashboardSummary(hospitalId: number) {
     const activeJourneys = await prisma.treatment_journeys.findMany({
       where: { hospital_id: hospitalId, status: 'ACTIVE' },
       include: {
@@ -89,7 +89,7 @@ export const retentionService = {
   /**
    * Get single patient retention risk detail
    */
-  async getPatientRiskDetail(journeyId: bigint) {
+  async getPatientRiskDetail(journeyId: number) {
     const journey = await prisma.treatment_journeys.findUnique({
       where: { journey_id: journeyId },
       include: {
@@ -172,7 +172,7 @@ export const retentionService = {
   /**
    * Run AI risk prediction via FastAPI and save assessment
    */
-  async triggerAssessment(journeyId: bigint) {
+  async triggerAssessment(journeyId: number) {
     const journey = await prisma.treatment_journeys.findUnique({
       where: { journey_id: journeyId },
       include: { patients: true, diseases: true },
@@ -288,10 +288,10 @@ export const retentionService = {
    * Create an intervention
    */
   async createIntervention(data: {
-    journeyId: bigint;
+    journeyId: number;
     type: string;
     priority: string;
-    assignedTo?: bigint;
+    assignedTo?: number;
     notes?: string;
   }) {
     const journey = await prisma.treatment_journeys.findUnique({
@@ -332,7 +332,7 @@ export const retentionService = {
    * Record intervention outcome and trigger risk reassessment (Closed Loop)
    */
   async recordOutcome(
-    interventionId: bigint,
+    interventionId: number,
     outcome: string,
     outcomeNotes?: string,
     rescheduledDate?: string
@@ -400,7 +400,7 @@ export const retentionService = {
   /**
    * Analytics overview for Admin
    */
-  async getAnalytics(hospitalId: bigint) {
+  async getAnalytics(hospitalId: number) {
     const totalJourneys = await prisma.treatment_journeys.count({ where: { hospital_id: hospitalId } });
     const totalInterventions = await prisma.interventions.count({ where: { hospital_id: hospitalId } });
     const completedInterventions = await prisma.interventions.count({

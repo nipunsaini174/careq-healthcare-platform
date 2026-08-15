@@ -18,7 +18,7 @@ import {
   MapPin,
 } from "lucide-react";
 import { useLayout } from "@/contexts/LayoutContext";
-import { patientApi, type ApiAppointment } from "@/services/api/patientApi";
+import { patientApi, isUpcomingStatus, type ApiAppointment } from "@/services/api/patientApi";
 
 export default function MyQueue() {
   const router = useRouter();
@@ -41,15 +41,19 @@ export default function MyQueue() {
       if (initialAptId && !activeAppointmentId) setActiveAppointmentId(initialAptId);
     }
 
-    const upcoming = allAppointments.filter((a) => a.status === "Upcoming");
+    const upcoming = allAppointments
+      .filter((a) => isUpcomingStatus(a.status))
+      .sort((a, b) => new Date(a.isoDate).getTime() - new Date(b.isoDate).getTime());
     setAppointments(upcoming);
     
     if (!activeAppointmentId && upcoming.length > 0) {
-      // If we don't have an active one, pick the first one
+      // If we don't have an active one, pick the soonest one
       setActiveAppointmentId(upcoming[0].id);
     } else if (activeAppointmentId && upcoming.length > 0 && !upcoming.some(a => a.id === activeAppointmentId)) {
       // If the currently active one is no longer 'Upcoming' (e.g. cancelled/completed), switch to the first available
       setActiveAppointmentId(upcoming[0].id);
+    } else if (upcoming.length === 0) {
+      setActiveAppointmentId(null);
     }
   }, [allAppointments, activeAppointmentId]);
 
@@ -68,11 +72,37 @@ export default function MyQueue() {
   };
 
   const activeApt = appointments.find(a => a.id === activeAppointmentId) || appointments[0];
-  const tokenDisplay = activeApt ? activeApt.id.replace("APT-", "T-") : "T-142";
+  const tokenDisplay = (activeApt as any)?.tokenCode || (activeApt as any)?.token?.tokenCode || (activeApt ? activeApt.id.replace("APT-", "T-") : "T-101");
   const doctorDisplay = activeApt ? activeApt.doctorName : "Dr. Sarah Johnson";
   const departmentDisplay = activeApt ? activeApt.department : "Cardiology Department";
   const { data: profile } = useProfile();
   const patientDisplay = activeApt ? `${activeApt.patientName} (${activeApt.relationship})` : (profile?.full_name ? `${profile.full_name} (Self)` : "Patient (Self)");
+
+  if (appointments.length === 0) {
+    return (
+      <div className="min-h-full bg-gray-50 dark:bg-[#0B0F14] pb-6">
+        <div className="bg-gradient-to-br from-teal-400 to-teal-500 dark:from-[#064E3B] dark:via-[#047857] dark:to-[#065F46] pt-[calc(env(safe-area-inset-top)+3.5rem)] pb-8 px-6 rounded-b-[2.5rem] shadow-md text-white">
+          <h1 className="text-2xl font-extrabold tracking-tight mb-1">Live Queue</h1>
+          <p className="text-white/90 text-sm font-medium">Track your consultation turn live</p>
+        </div>
+        <div className="p-6 text-center mt-12 max-w-sm mx-auto">
+          <div className="w-16 h-16 bg-teal-50 dark:bg-emerald-950/30 rounded-2xl flex items-center justify-center mx-auto mb-4 text-teal-600 dark:text-emerald-400">
+            <Clock className="w-8 h-8" />
+          </div>
+          <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">No Active Queue</h2>
+          <p className="text-sm text-gray-500 dark:text-[#94A3B8] mb-6">
+            You don't have any active queue tokens right now. Book an appointment or check back when your visit begins.
+          </p>
+          <button
+            onClick={() => router.push("/app/book")}
+            className="w-full bg-teal-500 dark:bg-emerald-600 text-white font-bold py-3 px-6 rounded-full shadow-lg hover:bg-teal-600 transition-colors active:scale-95"
+          >
+            Book Appointment
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-full bg-gray-50 dark:bg-[#0B0F14] pb-6">
@@ -101,16 +131,16 @@ export default function MyQueue() {
           {/* Stats Strip */}
           <div className="grid grid-cols-3 gap-2 bg-black/10 p-2 rounded-2xl backdrop-blur-md border border-white/10 items-center text-center">
             <div className="py-1">
+              <p className="text-white/70 text-[10px] uppercase tracking-wider mb-0.5">Wait Time</p>
+              <p className="text-xl font-bold">{activeApt?.estimatedWaitTime || 0}m</p>
+            </div>
+            <div className="border-x border-white/10 py-1">
               <p className="text-white/70 text-[10px] uppercase tracking-wider mb-0.5">Ahead</p>
-              <p className="text-xl font-bold">2</p>
+              <p className="text-xl font-bold">{Math.max(0, (activeApt?.queuePosition || 1) - 1)}</p>
             </div>
-            <div className="py-1 border-x border-white/10">
-              <p className="text-white/70 text-[10px] uppercase tracking-wider mb-0.5">Wait</p>
-              <p className="text-xl font-bold">15m</p>
-            </div>
-            <div className="bg-white/25 rounded-xl py-2 shadow-sm border border-white/30 transform scale-105 mx-1">
+            <div className="bg-white/25 rounded-xl py-2 shadow-sm border border-white/30 transform mx-1">
               <p className="text-white/90 text-[10px] uppercase tracking-wider font-semibold mb-0.5">Arrive By</p>
-              <p className="text-lg font-bold">10:15 AM</p>
+              <p className="text-lg font-bold">{activeApt?.time || '10:30 AM'}</p>
             </div>
           </div>
 
@@ -134,7 +164,7 @@ export default function MyQueue() {
                   onClick={() => setIsDropdownOpen(!isDropdownOpen)}
                   className="flex items-center gap-1.5 text-teal-50 text-xs bg-black/15 px-3 py-1.5 rounded-full backdrop-blur-sm border border-white/20 active:scale-95 transition-all"
                 >
-                  {doctorDisplay} (10:30 AM)
+                  {doctorDisplay} ({activeApt?.time || '10:30 AM'})
                   {isDropdownOpen ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
                 </button>
 
@@ -161,7 +191,7 @@ export default function MyQueue() {
                             <p className={`text-sm font-bold ${activeAppointmentId === apt.id ? "text-teal-700 dark:text-emerald-400" : "text-gray-900 dark:text-white"}`}>
                               {apt.doctorName}
                             </p>
-                            <p className="text-xs text-gray-500 dark:text-[#94A3B8]">{apt.department} • {apt.id.replace("APT-", "T-")}</p>
+                            <p className="text-xs text-gray-500 dark:text-[#94A3B8]">{apt.department} • {(apt as any).tokenCode || apt.token?.tokenCode || apt.id.replace("APT-", "T-")}</p>
                           </div>
                           {activeAppointmentId === apt.id && (
                             <div className="w-2 h-2 rounded-full bg-teal-500 dark:bg-emerald-600"></div>
@@ -196,7 +226,7 @@ export default function MyQueue() {
               </div>
               <div>
                 <p className="text-xs text-gray-500 dark:text-[#94A3B8] font-medium">Currently Serving</p>
-                <h3 className="text-base text-gray-900 dark:text-white font-bold">{tokenDisplay.replace("T-", "T-") /* Ensure correct format */}</h3>
+                <h3 className="text-base text-gray-900 dark:text-white font-bold">{((activeApt as any)?.liveQueueTokens?.[0]) || tokenDisplay}</h3>
               </div>
             </div>
             <button className="w-8 h-8 flex items-center justify-center rounded-full bg-gray-50 dark:bg-[#223040] text-gray-500 dark:text-[#94A3B8] transition-colors hover:bg-gray-100 dark:hover:bg-[#2A3A4E]">
@@ -288,57 +318,72 @@ export default function MyQueue() {
           <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-4">Queue Timeline</h3>
 
           <div className="space-y-4">
-            {/* Patient Ahead 1 */}
-            <div className="flex items-center">
-              <div className="w-10 h-10 bg-blue-50/80 dark:bg-blue-900/30 rounded-full flex items-center justify-center mr-4 border border-blue-100 dark:border-blue-800/30">
-                <span className="text-blue-600 dark:text-blue-400 font-bold text-sm">140</span>
-              </div>
-              <div className="flex-1">
-                <div className="flex items-center justify-between mb-1.5">
-                  <span className="text-gray-800 dark:text-white text-sm font-medium">Token 140</span>
-                  <span className="text-[10px] px-2 py-0.5 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded-full font-medium">
-                    In Progress
-                  </span>
-                </div>
-                <div className="w-full bg-gray-100 dark:bg-[#2A3A4E] rounded-full h-1.5">
-                  <div className="bg-green-500 dark:bg-emerald-500 h-1.5 rounded-full" style={{ width: "80%" }}></div>
-                </div>
-              </div>
-            </div>
+            {/* Dynamically Generate Full Queue Timeline */}
+            {(() => {
+              const queueList: string[] = (activeApt as any)?.liveQueueTokens || [tokenDisplay];
+              const userTokenIndex = queueList.indexOf(tokenDisplay);
 
-            {/* Patient Ahead 2 */}
-            <div className="flex items-center">
-              <div className="w-10 h-10 bg-gray-50 dark:bg-[#223040] rounded-full flex items-center justify-center mr-4 border border-gray-100 dark:border-[#2A3A4E]">
-                <span className="text-gray-600 dark:text-[#94A3B8] font-bold text-sm">141</span>
-              </div>
-              <div className="flex-1">
-                <div className="flex items-center justify-between mb-1.5">
-                  <span className="text-gray-800 dark:text-white text-sm font-medium">Token 141</span>
-                  <span className="text-[10px] px-2 py-0.5 bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400 rounded-full font-medium">
-                    Waiting
-                  </span>
-                </div>
-                <div className="w-full bg-gray-100 dark:bg-[#2A3A4E] rounded-full h-1.5">
-                  <div className="bg-yellow-500 h-1.5 rounded-full" style={{ width: "20%" }}></div>
-                </div>
-              </div>
-            </div>
+              return queueList.map((tokenNum: string, idx: number) => {
+                const isUser = tokenNum === tokenDisplay || (userTokenIndex === -1 && idx === 0);
+                const isServing = idx === 0;
+                const isAhead = userTokenIndex !== -1 && idx < userTokenIndex && !isServing;
+                const isLater = userTokenIndex !== -1 && idx > userTokenIndex;
 
-            {/* Your Token */}
-            <div className="flex items-center bg-teal-500 dark:bg-emerald-600/10 rounded-2xl p-3 border border-teal-500/20">
-              <div className="w-10 h-10 bg-teal-500 rounded-full flex items-center justify-center mr-4 shadow-sm shadow-teal-500/30">
-                <span className="text-white font-bold text-sm">{tokenDisplay.replace("T-", "")}</span>
-              </div>
-              <div className="flex-1">
-                <div className="flex items-center justify-between mb-1">
-                  <span className="text-gray-900 dark:text-white font-bold text-sm">Your Turn</span>
-                  <span className="text-[10px] px-2 py-0.5 bg-teal-500 dark:bg-emerald-600 text-white rounded-full font-medium">
-                    Upcoming
-                  </span>
-                </div>
-                <p className="text-xs text-gray-500 dark:text-[#94A3B8]">~15 minutes remaining</p>
-              </div>
-            </div>
+                if (isUser) {
+                  return (
+                    <div key={tokenNum + idx} className="flex items-center bg-teal-50 dark:bg-emerald-950/40 rounded-2xl p-3 border border-teal-500/30 dark:border-emerald-600/40 shadow-sm">
+                      <div className="w-10 h-10 bg-teal-500 dark:bg-emerald-600 rounded-full flex items-center justify-center mr-4 shadow-sm shadow-teal-500/30">
+                        <span className="text-white font-black text-xs">{tokenDisplay}</span>
+                      </div>
+                      <div className="flex-1">
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="text-gray-900 dark:text-white font-bold text-sm">Your Turn ({tokenDisplay})</span>
+                          <span className="text-[10px] px-2 py-0.5 bg-teal-500 dark:bg-emerald-600 text-white rounded-full font-bold uppercase tracking-wider">
+                            You
+                          </span>
+                        </div>
+                        <p className="text-xs text-teal-700 dark:text-emerald-300 font-medium">
+                          {idx === 0 ? "You are currently being called!" : `~${activeApt?.estimatedWaitTime || 0} minutes estimated wait`}
+                        </p>
+                      </div>
+                    </div>
+                  );
+                }
+
+                return (
+                  <div key={tokenNum + idx} className={`flex items-center ${isLater ? 'opacity-85' : ''}`}>
+                    <div className={`w-10 h-10 rounded-full flex items-center justify-center mr-4 border ${
+                      isServing 
+                        ? 'bg-green-50 dark:bg-green-950/30 border-green-200 dark:border-green-800/40' 
+                        : isAhead 
+                        ? 'bg-amber-50 dark:bg-amber-950/20 border-amber-200 dark:border-amber-800/30' 
+                        : 'bg-gray-50 dark:bg-[#223040] border-gray-100 dark:border-[#2A3A4E]'
+                    }`}>
+                      <span className={`${
+                        isServing ? 'text-green-600 dark:text-green-400' : isAhead ? 'text-amber-600 dark:text-amber-300' : 'text-gray-600 dark:text-[#94A3B8]'
+                      } font-bold text-xs`}>{tokenNum}</span>
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-center justify-between mb-1.5">
+                        <span className="text-gray-800 dark:text-white text-sm font-medium">{tokenNum.startsWith('T') || tokenNum.startsWith('A') ? tokenNum : `Token ${tokenNum}`}</span>
+                        <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider ${
+                          isServing 
+                            ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400' 
+                            : isAhead 
+                            ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400' 
+                            : 'bg-gray-100 dark:bg-[#223040] text-gray-500 dark:text-[#94A3B8]'
+                        }`}>
+                          {isServing ? 'Serving Now' : isAhead ? 'Ahead' : 'Later'}
+                        </span>
+                      </div>
+                      <div className="w-full bg-gray-100 dark:bg-[#2A3A4E] rounded-full h-1.5">
+                        <div className={`${isServing ? 'bg-green-500 dark:bg-emerald-500' : isAhead ? 'bg-amber-400' : 'bg-gray-300 dark:bg-gray-600'} h-1.5 rounded-full`} style={{ width: isServing ? '90%' : isAhead ? '50%' : '15%' }}></div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              });
+            })()}
           </div>
         </motion.div>
 

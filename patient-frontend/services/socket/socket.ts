@@ -53,6 +53,9 @@ export interface ServerToClientEvents {
   queue_updated: (data: any) => void;
   appointment_updated: (data: any) => void;
   appointment_created: (data: any) => void;
+  consultation_completed: (data: any) => void;
+  appointment_cancelled: (data: any) => void;
+  broadcast_notification: (data: any) => void;
   "notification:new": (data: any) => void;
   // Directory mutations broadcast from the hospital app — patients use
   // them to live-refresh the Book Appointment screen.

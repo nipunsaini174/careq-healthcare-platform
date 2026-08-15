@@ -90,7 +90,7 @@ export class AuthService {
         password_hash: 'SUPABASE_AUTH_DELEGATED',
         full_name: fullName,
         role: role,
-        hospital_id: hospitalId ? BigInt(hospitalId) : 1n,
+        hospital_id: hospitalId ? Number(hospitalId) : 1,
         status: 'active',
       },
     });
@@ -102,7 +102,7 @@ export class AuthService {
           hospital_id: user.hospital_id,
           // primary_doctor_id stays null on signup — a primary doctor is
           // assigned later (e.g. after a first appointment), not at
-          // registration time. Hard-coding a placeholder (1n) was breaking
+          // registration time. Hard-coding a placeholder () was breaking
           // signup whenever doctor #1 didn't exist.
           uhid: `UHID-${Date.now().toString().slice(-6)}`,
           full_name: fullName,
@@ -180,9 +180,9 @@ export class AuthService {
       const fallbackName = email.split('@')[0] || 'Patient';
       const fullName = metadataName?.trim() || fallbackName;
 
-      // Pick a sensible hospital_id — first one in DB, or fall back to 1n.
+      // Pick a sensible hospital_id — first one in DB, or fall back to .
       const firstHospital = await prisma.hospitals.findFirst();
-      const hospitalId = firstHospital?.hospital_id ?? 1n;
+      const hospitalId = firstHospital?.hospital_id ?? 1;
 
       user = await prisma.users.create({
         data: {
@@ -236,7 +236,7 @@ export class AuthService {
       throw new Error('Full name is required');
     }
     const updated = await prisma.users.update({
-      where: { user_id: BigInt(userId) },
+      where: { user_id: Number(userId) },
       data: { full_name: fullName },
     });
     return {

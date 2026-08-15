@@ -2,7 +2,7 @@ import { prisma } from '../prisma/client.js';
 import { supabaseAdmin } from '../config/supabase.js';
 
 export class ReceptionistService {
-  async getAllReceptionists(hospitalId: bigint) {
+  async getAllReceptionists(hospitalId: number) {
     try {
       const receptionists = await prisma.receptionists.findMany({
         where: { hospital_id: hospitalId },
@@ -63,7 +63,7 @@ export class ReceptionistService {
     };
   }
 
-  async getProfileByUserId(userId: bigint) {
+  async getProfileByUserId(userId: number) {
     try {
       const rec = await prisma.receptionists.findFirst({
         where: { user_id: userId },
@@ -109,7 +109,20 @@ export class ReceptionistService {
     };
   }
 
-  async createReceptionist(hospitalId: bigint, data: any) {
+  async updateProfileByUserId(userId: number, data: { name?: string; phone?: string }) {
+    const user = await prisma.users.findUnique({ where: { user_id: userId } });
+    if (!user) throw new Error('User not found');
+    await prisma.users.update({
+      where: { user_id: userId },
+      data: {
+        ...(data.name ? { full_name: data.name } : {}),
+        ...(data.phone !== undefined ? { phone: data.phone || null } : {}),
+      }
+    });
+    return this.getProfileByUserId(userId);
+  }
+
+  async createReceptionist(hospitalId: number, data: any) {
     const { name, email, phone, shift_start, shift_end, status, password } = data;
 
     try {
@@ -185,10 +198,10 @@ export class ReceptionistService {
     }
   }
 
-  async updateReceptionistStatus(hospitalId: bigint, id: string, status: string) {
+  async updateReceptionistStatus(hospitalId: number, id: string, status: string) {
     try {
       const updatedReceptionist = await prisma.receptionists.update({
-        where: { receptionist_id: BigInt(id) },
+        where: { receptionist_id: Number(id) },
         data: { status: status },
         include: { users: true }
       });
@@ -206,10 +219,10 @@ export class ReceptionistService {
     }
   }
 
-  async updateReceptionist(hospitalId: bigint, id: string, data: any) {
+  async updateReceptionist(hospitalId: number, id: string, data: any) {
     const { name, email, phone, shift_start, shift_end, status } = data;
     try {
-      const rec = await prisma.receptionists.findUnique({ where: { receptionist_id: BigInt(id) }, include: { users: true } });
+      const rec = await prisma.receptionists.findUnique({ where: { receptionist_id: Number(id) }, include: { users: true } });
       if (rec) {
         await prisma.users.update({
           where: { user_id: rec.user_id },
@@ -221,7 +234,7 @@ export class ReceptionistService {
         });
 
         const updated = await prisma.receptionists.update({
-          where: { receptionist_id: BigInt(id) },
+          where: { receptionist_id: Number(id) },
           data: {
             shift_start: shift_start ? new Date(`1970-01-01T${shift_start}Z`) : rec.shift_start,
             shift_end: shift_end ? new Date(`1970-01-01T${shift_end}Z`) : rec.shift_end,
@@ -255,11 +268,11 @@ export class ReceptionistService {
     };
   }
 
-  async deleteReceptionist(hospitalId: bigint, id: string) {
+  async deleteReceptionist(hospitalId: number, id: string) {
     try {
-      const rec = await prisma.receptionists.findUnique({ where: { receptionist_id: BigInt(id) } });
+      const rec = await prisma.receptionists.findUnique({ where: { receptionist_id: Number(id) } });
       if (rec) {
-        await prisma.receptionists.delete({ where: { receptionist_id: BigInt(id) } });
+        await prisma.receptionists.delete({ where: { receptionist_id: Number(id) } });
         await prisma.users.delete({ where: { user_id: rec.user_id } });
       }
     } catch (err) {

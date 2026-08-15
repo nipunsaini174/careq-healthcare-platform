@@ -14,8 +14,14 @@ export function useQueue() {
       
       const mappedQueue = data
         .filter(a => a.token !== null) // Only show appointments with an active token
+        .filter(a => {
+          const ts = (a.token?.tokenStatus || '').toLowerCase();
+          const as = (a.appointmentStatus || '').toLowerCase();
+          return ts !== 'completed' && ts !== 'cancelled' && as !== 'completed' && as !== 'cancelled';
+        })
         .map(a => ({
           id: a.token.tokenId,
+          appointmentId: a.appointmentId,
           patientId: a.patientUhid || a.patientId,
           patientName: a.patientName,
           tokenNumber: a.token.tokenCode || a.token.tokenId,
@@ -62,25 +68,28 @@ export function useQueue() {
   }, [socket]);
 
   const addToken = () => {
-    // This should ideally call a backend endpoint to generate a token
-    // For now we just refresh
     fetchQueue();
   };
 
   const updateTokenStatus = async (tokenId, newStatus) => {
-    // Ideally this calls a backend endpoint: api.put(`/tokens/${tokenId}/status`, { status: newStatus })
-    // We update locally for immediate feedback
     setQueue(prev => prev.map(token => 
-      token.id === tokenId ? { ...token, status: newStatus } : token
+      (token.id === tokenId || token.tokenNumber === tokenId) ? { ...token, status: newStatus } : token
     ));
-    // Note: To fully implement, we need a backend endpoint for this.
+    try {
+      if (newStatus === 'COMPLETED' || newStatus === 'Completed') {
+        await api.delete(`/receptionist/queue/${tokenId}`);
+      }
+    } catch (err) {
+      console.error('Failed to update token status on server:', err);
+    }
   };
 
   const removeToken = async (tokenId) => {
+    if (!tokenId) return;
     try {
-      await api.delete(`/receptionist/queue/${tokenId}`);
       // Optimistic update
-      setQueue(prev => prev.filter(token => token.id !== tokenId));
+      setQueue(prev => prev.filter(token => token.id !== tokenId && token.id !== String(tokenId) && token.tokenNumber !== tokenId));
+      await api.delete(`/receptionist/queue/${tokenId}`);
     } catch (err) {
       console.error('Failed to remove token:', err);
     }

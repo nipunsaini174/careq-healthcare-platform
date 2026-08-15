@@ -7,7 +7,7 @@ export class QueueController {
   getDoctorQueue = async (req: Request, res: Response) => {
     try {
       const hospitalId = await resolveHospitalIdForUser(req);
-      const doctorId = req.query.doctorId ? BigInt(req.query.doctorId as string) : undefined;
+      const doctorId = req.query.doctorId ? Number(req.query.doctorId as string) : undefined;
       const data = await queueService.getQueueForDoctor(hospitalId, doctorId);
       res.status(200).json(data);
     } catch (err: any) {
@@ -31,7 +31,7 @@ export class QueueController {
   callNext = async (req: Request, res: Response) => {
     try {
       const hospitalId = await resolveHospitalIdForUser(req);
-      const doctorId = BigInt(req.body.doctorId || 1);
+      const doctorId = Number(req.body.doctorId || 1);
       const result = await queueService.callNextPatient(hospitalId, doctorId);
       res.status(200).json(result);
     } catch (err: any) {
@@ -53,6 +53,27 @@ export class QueueController {
     try {
       const { id } = req.params;
       const result = await queueService.skipPatient(id as string);
+      res.status(200).json(result);
+    } catch (err: any) {
+      res.status(400).json({ error: err.message });
+    }
+  };
+
+  markEmergency = async (req: Request, res: Response) => {
+    try {
+      const { id } = req.params;
+      const result = await queueService.markEmergency(id as string);
+      res.status(200).json(result);
+    } catch (err: any) {
+      res.status(400).json({ error: err.message });
+    }
+  };
+
+  updateStatus = async (req: Request, res: Response) => {
+    try {
+      const { id } = req.params;
+      const { status } = req.body;
+      const result = await queueService.updateTokenStatus(id as string, status);
       res.status(200).json(result);
     } catch (err: any) {
       res.status(400).json({ error: err.message });

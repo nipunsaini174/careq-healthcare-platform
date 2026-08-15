@@ -10,7 +10,6 @@ async function main() {
     where: {
       hospital_name: {
         contains: 'Apex',
-        mode: 'insensitive',
       }
     }
   });
