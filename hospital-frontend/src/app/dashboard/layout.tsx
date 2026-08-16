@@ -1,5 +1,6 @@
 import { protectRoute } from "../../lib/proxy";
 import { NotificationListener } from "@/components/shared/NotificationListener";
+import { HospitalAiAssistant } from "@/components/ai/HospitalAiAssistant";
 
 export default async function DashboardLayout({
   children,
@@ -12,6 +13,7 @@ export default async function DashboardLayout({
     <>
       <NotificationListener />
       {children}
+      <HospitalAiAssistant />
     </>
   );
 }

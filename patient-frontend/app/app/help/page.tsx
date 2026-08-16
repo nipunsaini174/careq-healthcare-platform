@@ -175,7 +175,7 @@ export default function HelpAndSupport() {
               </div>
               <div>
                 <p className="text-xs text-gray-500 dark:text-[#94A3B8]">Email</p>
-                <p className="text-gray-900 dark:text-white font-medium">support@suvidhaq.com</p>
+                <p className="text-gray-900 dark:text-white font-medium">support@careq.com</p>
               </div>
             </div>
 

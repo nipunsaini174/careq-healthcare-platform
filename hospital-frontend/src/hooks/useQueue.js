@@ -12,14 +12,46 @@ export function useQueue() {
       const response = await api.get('/receptionist/queue-activity?limit=50');
       const data = response.data.data || [];
       
-      const mappedQueue = data
-        .filter(a => a.token !== null) // Only show appointments with an active token
+      const now = new Date();
+      const STANDARD_SLOT_MINS = 15;
+      const formatTime = (d) => d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', hour12: true });
+
+      const reversed = [...data]
+        .filter(a => a.token !== null)
         .filter(a => {
           const ts = (a.token?.tokenStatus || '').toLowerCase();
           const as = (a.appointmentStatus || '').toLowerCase();
           return ts !== 'completed' && ts !== 'cancelled' && as !== 'completed' && as !== 'cancelled';
         })
-        .map(a => ({
+        .reverse(); // FIFO order
+
+      let runningTimeMs = now.getTime();
+      const activeServing = reversed.find(a => mapStatus(a.token?.tokenStatus) === 'IN_CONSULTATION');
+      if (activeServing) {
+        const checkIn = activeServing.token?.checkInTime ? new Date(activeServing.token.checkInTime) : now;
+        const elapsed = Math.max(0, Math.floor((now.getTime() - checkIn.getTime()) / 60000));
+        const rem = Math.max(0, STANDARD_SLOT_MINS - elapsed);
+        runningTimeMs = now.getTime() + (rem * 60000);
+      }
+
+      const mappedQueue = reversed.map((a, idx) => {
+        const isCurrent = mapStatus(a.token?.tokenStatus) === 'IN_CONSULTATION';
+        let estStart = now;
+        let estEnd = new Date(now.getTime() + STANDARD_SLOT_MINS * 60000);
+        let waitMins = 0;
+
+        if (isCurrent) {
+          estStart = a.token?.checkInTime ? new Date(a.token.checkInTime) : now;
+          estEnd = new Date(estStart.getTime() + STANDARD_SLOT_MINS * 60000);
+          waitMins = 0;
+        } else {
+          estStart = new Date(runningTimeMs);
+          estEnd = new Date(runningTimeMs + STANDARD_SLOT_MINS * 60000);
+          waitMins = Math.max(0, Math.round((runningTimeMs - now.getTime()) / 60000));
+          runningTimeMs += (STANDARD_SLOT_MINS * 60000);
+        }
+
+        return {
           id: a.token.tokenId,
           appointmentId: a.appointmentId,
           patientId: a.patientUhid || a.patientId,
@@ -31,9 +63,14 @@ export function useQueue() {
           arrivalTime: a.appointmentDate,
           doctorName: a.doctorName,
           department: a.department,
+          queuePosition: idx + 1,
+          estimatedWaitMins: waitMins,
+          scheduledStartTime: formatTime(estStart),
+          scheduledEndTime: formatTime(estEnd),
+          slotWindow: `${formatTime(estStart)} - ${formatTime(estEnd)}`,
           currentScore: (a.token.queuePosition || 1) * 10
-        }))
-        .reverse(); // Display in FIFO order (oldest first)
+        };
+      });
 
       setQueue(mappedQueue);
     } catch (err) {
@@ -48,20 +85,23 @@ export function useQueue() {
   useEffect(() => {
     fetchQueue();
 
-    // Fallback: refresh every 30s in case socket misses an event or connection drops
-    const interval = setInterval(fetchQueue, 30000);
+    const interval = setInterval(fetchQueue, 15000); // refresh every 15s to keep clock rolling
     
     if (!socket) {
       return () => clearInterval(interval);
     }
     
     socket.on('queue_updated', fetchQueue);
+    socket.on('schedule_cascaded', fetchQueue);
+    socket.on('consultation_completed', fetchQueue);
     socket.on('appointment_created', fetchQueue);
     socket.on('appointment_updated', fetchQueue);
     
     return () => {
       clearInterval(interval);
       socket.off('queue_updated', fetchQueue);
+      socket.off('schedule_cascaded', fetchQueue);
+      socket.off('consultation_completed', fetchQueue);
       socket.off('appointment_created', fetchQueue);
       socket.off('appointment_updated', fetchQueue);
     };

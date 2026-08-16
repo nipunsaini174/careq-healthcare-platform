@@ -51,7 +51,7 @@ export default function SplashPage() {
           onClick={() => router.push("/dev-bypass")}
         >
           <p className="text-slate-500 text-sm font-medium">
-            Powered by SUVIDHAQ © 2026
+            Powered by CAREQ © 2026
           </p>
         </motion.div>
       </div>

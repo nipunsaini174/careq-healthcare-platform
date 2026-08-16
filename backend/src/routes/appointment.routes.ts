@@ -9,6 +9,8 @@ router.use(authenticateToken);
 router.get('/next-slot', appointmentController.getNextSlot);
 router.get('/', appointmentController.getAppointments);
 router.post('/', appointmentController.createAppointment);
+router.patch('/:id/check-in', appointmentController.checkInAppointment);
 router.put('/:id/cancel', appointmentController.cancelAppointment);
+router.patch('/:id/cancel', appointmentController.cancelAppointment);
 
 export default router;

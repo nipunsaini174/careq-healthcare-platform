@@ -19,6 +19,16 @@ export interface ApiAppointment {
   queuePosition?: number;
   estimatedWaitTime?: number;
   tokenCode?: string;
+  chief_complaint?: string;
+  symptoms?: string;
+  symptoms_duration?: string;
+  severity?: string;
+  is_first_visit?: boolean;
+  days_since_last_visit?: number;
+  current_medications?: string;
+  medical_history?: string;
+  allergies?: string;
+  intake_notes?: string;
   token?: {
     tokenId?: string;
     tokenCode?: string;

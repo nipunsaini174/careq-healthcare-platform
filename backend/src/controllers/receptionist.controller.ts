@@ -312,19 +312,26 @@ export class ReceptionistController {
   getAllPatients = async (req: Request, res: Response) => {
     try {
       const hospitalId = await resolveHospitalIdForUser(req);
-      
-      // BYPASS for demo mode
-      if (hospitalId === Number(1)) {
-        return res.status(200).json({ data: [] });
-      }
 
       const patients = await prisma.patients.findMany({
-        where: { hospital_id: hospitalId },
+        where: hospitalId
+          ? {
+              OR: [
+                { hospital_id: hospitalId },
+                { appointments: { some: { hospital_id: hospitalId } } },
+                { queue_tokens: { some: { hospital_id: hospitalId } } },
+              ],
+            }
+          : {},
         include: {
           doctors: { select: { users: { select: { full_name: true } } } },
           appointments: {
+            where: hospitalId ? { hospital_id: hospitalId } : {},
             select: { 
+              appointment_id: true,
               created_at: true,
+              appointment_date: true,
+              appointment_status: true,
               doctors: { select: { users: { select: { full_name: true } } } }
             },
             orderBy: { created_at: 'desc' },
@@ -339,22 +346,29 @@ export class ReceptionistController {
           ? (rawDocName.startsWith('Dr.') ? rawDocName : `Dr. ${rawDocName}`) 
           : 'Unassigned';
 
+        const lastAppt = p.appointments?.[0];
+        const lastVisitDate = lastAppt?.appointment_date || lastAppt?.created_at || null;
+
         return {
           patientId: p.patient_id.toString(),
-          uhid: p.uhid,
-          name: p.full_name,
+          uhid: p.uhid || `UHID-${p.patient_id}`,
+          name: p.full_name || 'Anonymous',
           phone: p.phone || 'N/A',
           email: p.email || 'N/A',
+          age: p.age || null,
+          gender: p.gender || 'Not Specified',
+          bloodGroup: p.blood_group || 'Unknown',
           status: p.patient_status || 'Active',
-          billingStatus: p.billing_status || 'Pending',
+          billingStatus: p.billing_status || 'Paid',
           doctorName: formattedDocName,
-          totalVisits: p.appointments?.length || 0,
-          lastVisit: p.appointments?.[0]?.created_at ? p.appointments[0].created_at.toISOString() : null,
+          totalVisits: p.appointments?.length || (p.patient_id ? 1 : 0),
+          lastVisit: lastVisitDate ? new Date(lastVisitDate).toISOString() : null,
         };
       });
 
       res.status(200).json({ data });
     } catch (error: any) {
+      console.error('[GET /receptionist/patients error]', error);
       res.status(500).json({ error: error.message });
     }
   };
@@ -395,6 +409,300 @@ export class ReceptionistController {
     } catch (error: any) {
       const status = /not found/i.test(error.message) ? 404 : 400;
       res.status(status).json({ error: error.message });
+    }
+  };
+
+  /**
+   * GET /api/receptionist/tracking/:tokenCode
+   * GET /api/receptionist/tracking?q=...
+   *
+   * Finds the patient journey, real-time location, department status,
+   * vitals, queue progress, and consultation timeline for any token / patient.
+   */
+  trackToken = async (req: Request, res: Response) => {
+    try {
+      const hospitalId = await resolveHospitalIdForUser(req);
+      const queryParam = String(req.params.tokenCode || req.query.q || '').trim();
+
+      let token = null;
+
+      if (queryParam) {
+        const cleanNumeric = queryParam.replace(/^(APT-|T-|T|A-|P-|PT-|UHID-)/i, '');
+        const numId = Number(cleanNumeric);
+
+        // 1. Try finding by exact token_code (e.g. A-001, T44, A-045, etc.)
+        token = await prisma.queue_tokens.findFirst({
+          where: {
+            hospital_id: hospitalId,
+            OR: [
+              { token_code: queryParam },
+              { token_code: queryParam.toUpperCase() },
+              { token_code: queryParam.toLowerCase() },
+            ]
+          },
+          include: {
+            patients: true,
+            doctors: { include: { users: true, departments: true } },
+            appointments: true,
+          }
+        });
+
+        // 2. Try finding by matching various prefixes or formats
+        if (!token && !isNaN(numId) && numId > 0) {
+          token = await prisma.queue_tokens.findFirst({
+            where: {
+              hospital_id: hospitalId,
+              OR: [
+                { token_id: numId },
+                { appointment_id: numId },
+                { token_code: `A-${String(numId).padStart(3, '0')}` },
+                { token_code: `A-${numId}` },
+                { token_code: `T${numId}` },
+                { token_code: `T-${numId}` },
+                { token_code: `A${numId}` },
+                { patient_id: numId },
+              ]
+            },
+            include: {
+              patients: true,
+              doctors: { include: { users: true, departments: true } },
+              appointments: true,
+            },
+            orderBy: { token_id: 'desc' }
+          });
+        }
+
+        // 3. Try finding by patient UHID or Name or Phone
+        if (!token) {
+          const matchedPatient = await prisma.patients.findFirst({
+            where: {
+              hospital_id: hospitalId,
+              OR: [
+                { uhid: queryParam },
+                { uhid: queryParam.toUpperCase() },
+                { full_name: { contains: queryParam } },
+                { phone: { contains: queryParam } },
+              ]
+            },
+            include: {
+              queue_tokens: {
+                include: {
+                  doctors: { include: { users: true, departments: true } },
+                  appointments: true,
+                },
+                orderBy: { token_id: 'desc' }
+              }
+            }
+          });
+
+          if (matchedPatient && matchedPatient.queue_tokens.length > 0) {
+            token = {
+              ...matchedPatient.queue_tokens[0],
+              patients: matchedPatient,
+            } as any;
+          }
+        }
+      }
+
+      // If still not found and no specific search, return the latest token in the hospital
+      if (!token) {
+        token = await prisma.queue_tokens.findFirst({
+          where: { hospital_id: hospitalId },
+          include: {
+            patients: true,
+            doctors: { include: { users: true, departments: true } },
+            appointments: true,
+          },
+          orderBy: { token_id: 'desc' }
+        });
+      }
+
+      if (!token) {
+        return res.status(404).json({
+          error: 'No active token found matching the query.',
+          suggestion: 'Please verify the token number (e.g. A-001, T44) or patient name.'
+        });
+      }
+
+      // Build journey data
+      const pat = token.patients;
+      const doc = token.doctors;
+      const appt = token.appointments;
+
+      const rawDocName = doc?.users?.full_name || doc?.specialization || 'Doctor';
+      const formattedDocName = rawDocName.startsWith('Dr.') ? rawDocName : `Dr. ${rawDocName}`;
+      const departmentName = doc?.departments?.department_name || doc?.specialization || 'General OPD';
+      const roomName = doc?.room || doc?.opd || 'Room 104';
+
+      const checkInDate = token.check_in_time ? new Date(token.check_in_time) : new Date();
+      const formatTime = (d: Date) => d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+
+      const regTime = appt?.created_at ? formatTime(new Date(appt.created_at)) : formatTime(checkInDate);
+      const checkInTimeStr = formatTime(checkInDate);
+      const vitalsTime = formatTime(new Date(checkInDate.getTime() + 10 * 60000));
+      const calledTime = formatTime(new Date(checkInDate.getTime() + (token.estimated_wait_time || 15) * 60000));
+
+      const status = (token.token_status || '').toUpperCase();
+      const isCompleted = status === 'COMPLETED' || status === 'DONE' || appt?.appointment_status === 'Completed';
+      const isInConsultation = status === 'IN_PROGRESS' || status === 'SERVING' || status === 'IN_CONSULTATION';
+      const isCalled = status === 'CALLED' || isInConsultation || isCompleted;
+      const isWaiting = status === 'WAITING' || status === 'SCHEDULED' || isCalled;
+
+      const steps = [
+        {
+          id: 1,
+          title: 'Registration & Token Issued',
+          time: regTime,
+          status: 'completed',
+          icon: 'FileText',
+          location: 'Main Reception Desk',
+          desc: `Token #${token.token_code} issued for ${departmentName} consultation.`,
+        },
+        {
+          id: 2,
+          title: 'Vitals & Triage Check',
+          time: vitalsTime,
+          status: 'completed',
+          icon: 'CheckCircle2',
+          location: 'OPD Triage Station',
+          desc: `Vitals recorded • Priority score: ${token.priority_score || 30} (Normal OPD)`,
+        },
+        {
+          id: 3,
+          title: `${departmentName} Waiting Area`,
+          time: checkInTimeStr,
+          status: isCalled ? 'completed' : (isWaiting ? 'active' : 'pending'),
+          icon: 'Clock',
+          location: `${departmentName} Waiting Lobby, 2nd Floor`,
+          desc: isCalled
+            ? 'Proceeded to consultation room.'
+            : `Patient seated in queue. Queue position: #${token.queue_position || 1} • Approx. ${token.estimated_wait_time || 15} mins remaining.`,
+        },
+        {
+          id: 4,
+          title: `Called to ${roomName}`,
+          time: isCalled ? calledTime : '-',
+          status: isCompleted || isInConsultation ? 'completed' : (isCalled ? 'active' : 'pending'),
+          icon: 'Stethoscope',
+          location: `${roomName} (${departmentName})`,
+          desc: isCalled
+            ? `Token #${token.token_code} called by ${formattedDocName}.`
+            : `Awaiting call from ${formattedDocName}.`,
+        },
+        {
+          id: 5,
+          title: 'Doctor Consultation',
+          time: isInConsultation || isCompleted ? calledTime : '-',
+          status: isCompleted ? 'completed' : (isInConsultation ? 'active' : 'pending'),
+          icon: 'User',
+          location: `${roomName} Consultation Chamber`,
+          desc: isCompleted
+            ? `Consultation completed by ${formattedDocName}. EMR diagnosis & e-Rx updated.`
+            : (isInConsultation ? `Clinical examination in progress with ${formattedDocName}.` : 'Pending consultation.'),
+        },
+        {
+          id: 6,
+          title: 'Diagnostics & Pharmacy',
+          time: isCompleted ? formatTime(new Date(Date.now() + 5 * 60000)) : '-',
+          status: isCompleted ? 'completed' : 'pending',
+          icon: 'Beaker',
+          location: 'Central Diagnostic Lab & Pharmacy (Ground Floor)',
+          desc: isCompleted
+            ? 'Prescription routed to pharmacy counter & patient portal.'
+            : 'Awaiting physician prescription.',
+        },
+        {
+          id: 7,
+          title: 'Billing & Clearance',
+          time: isCompleted ? formatTime(new Date(Date.now() + 10 * 60000)) : '-',
+          status: (pat?.billing_status === 'Paid' || pat?.billing_status === 'Clear' || isCompleted) ? 'completed' : 'pending',
+          icon: 'Receipt',
+          location: 'Billing Desk 1',
+          desc: `Billing status: ${pat?.billing_status || 'Pending'} • Discharge / Exit Clearance.`,
+        },
+      ];
+
+      // Current location & summary status text
+      let currentStageName = 'WAITING IN QUEUE';
+      let currentStageDesc = `Waiting in ${departmentName} Lobby (Queue #${token.queue_position || 1})`;
+      let currentBadge = 'WAITING';
+
+      if (isCompleted) {
+        currentStageName = 'COMPLETED / CHECKED OUT';
+        currentStageDesc = `Consultation finished with ${formattedDocName} at ${roomName}`;
+        currentBadge = 'COMPLETED';
+      } else if (isInConsultation) {
+        currentStageName = `IN CONSULTATION (${roomName})`;
+        currentStageDesc = `Currently with ${formattedDocName} in ${roomName}`;
+        currentBadge = 'IN_CONSULTATION';
+      } else if (status === 'CALLED') {
+        currentStageName = `CALLED TO ${roomName}`;
+        currentStageDesc = `Token called by ${formattedDocName} to ${roomName}`;
+        currentBadge = 'CALLED';
+      }
+
+      const payload = {
+        tokenCode: String(token.token_code || ''),
+        tokenId: String(token.token_id || ''),
+        appointmentId: appt ? String(appt.appointment_id) : null,
+        patientName: pat?.full_name || 'Patient',
+        patientAge: pat?.age || null,
+        patientGender: pat?.gender || 'Not Specified',
+        patientUhid: pat?.uhid || `UHID-${pat?.patient_id || token.patient_id}`,
+        patientPhone: pat?.phone || 'N/A',
+        patientEmail: pat?.email || 'N/A',
+        bloodGroup: pat?.blood_group || 'Unknown',
+        assignedDoctor: formattedDocName,
+        department: departmentName,
+        opdRoom: roomName,
+        currentStage: currentStageName,
+        currentStageDesc: currentStageDesc,
+        currentBadge: currentBadge,
+        totalWaitTime: `${token.estimated_wait_time || 25} mins`,
+        queuePosition: token.queue_position || 1,
+        billingStatus: pat?.billing_status || 'Paid',
+        appointmentDate: appt?.appointment_date ? appt.appointment_date.toISOString() : checkInDate.toISOString(),
+        steps,
+      };
+
+      res.status(200).json({ data: payload });
+    } catch (error: any) {
+      console.error('[GET /receptionist/tracking error]', error);
+      res.status(500).json({ error: error.message });
+    }
+  };
+
+  /**
+   * GET /api/receptionist/active-tokens
+   * Returns list of today's tokens for quick search & click tracking.
+   */
+  getActiveTokens = async (req: Request, res: Response) => {
+    try {
+      const hospitalId = await resolveHospitalIdForUser(req);
+      const tokens = await prisma.queue_tokens.findMany({
+        where: { hospital_id: hospitalId },
+        include: {
+          patients: true,
+          doctors: { include: { users: true, departments: true } },
+          appointments: true,
+        },
+        orderBy: { token_id: 'desc' },
+        take: 15,
+      });
+
+      const list = tokens.map(t => ({
+        tokenCode: t.token_code,
+        patientName: t.patients?.full_name || 'Patient',
+        patientUhid: t.patients?.uhid || `UHID-${t.patient_id}`,
+        doctorName: t.doctors?.users?.full_name ? `Dr. ${t.doctors.users.full_name.replace(/^Dr\.\s*/i, '')}` : 'Doctor',
+        department: t.doctors?.departments?.department_name || t.doctors?.specialization || 'OPD',
+        status: t.token_status,
+        queuePosition: t.queue_position,
+      }));
+
+      res.status(200).json({ data: list });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
     }
   };
 }

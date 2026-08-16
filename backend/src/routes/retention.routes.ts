@@ -10,6 +10,9 @@ router.use(authMiddleware, requireRole('receptionist', 'doctor', 'admin'));
 
 router.get('/dashboard', retentionController.getDashboard);
 router.get('/analytics', retentionController.getAnalytics);
+router.get('/followup-intelligence', retentionController.getFollowupIntelligence);
+router.post('/predict-followup', retentionController.predictFollowup);
+router.post('/action-followup', retentionController.actionFollowup);
 router.get('/patients/:journeyId', retentionController.getPatientDetail);
 router.post('/assess/:journeyId', retentionController.triggerAssessment);
 router.post('/interventions', retentionController.createIntervention);

@@ -26,6 +26,20 @@ model appointments {
   appointment_type        String                   
   appointment_status      String                   
   created_at              DateTime                 @default(now())
+
+  // Patient Intake & Pre-Consultation Form Data
+  chief_complaint         String?
+  symptoms                String?
+  symptoms_duration       String?
+  severity                String?                  // 'Mild' | 'Moderate' | 'Severe'
+  is_first_visit          Boolean?                 @default(true)
+  days_since_last_visit   Int?
+  last_visit_date         DateTime?
+  current_medications     String?
+  medical_history         String?
+  allergies               String?
+  intake_notes            String?
+
   doctors                 doctors                  @relation(fields: [doctor_id], references: [doctor_id])
   hospitals               hospitals                @relation(fields: [hospital_id], references: [hospital_id])
   patients                patients                 @relation(fields: [patient_id], references: [patient_id])

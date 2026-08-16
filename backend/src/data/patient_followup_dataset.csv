@@ -1,0 +1,501 @@
+record_id,diagnosis,age_group,severity,test_name,test_value,test_abnormal,medication_changed,previous_missed_followup,previous_visits,recommended_followup
+SFU-0001,Diabetes,18-30,Moderate,HbA1c,8.9,Yes,Yes,Yes,1,3_DAYS
+SFU-0002,Migraine,18-30,Moderate,Pain Score,8,Yes,Yes,Yes,3,3_DAYS
+SFU-0003,Migraine,18-30,Moderate,Pain Score,3,No,No,No,6,14_DAYS
+SFU-0004,Thyroid Disorder,46-60,Moderate,TSH,4.2,Yes,Yes,No,6,7_DAYS
+SFU-0005,Hypertension,31-45,High,Systolic BP,150,Yes,No,Yes,1,3_DAYS
+SFU-0006,Asthma,46-60,Moderate,PEF,220,Yes,No,No,6,7_DAYS
+SFU-0007,Migraine,46-60,Moderate,Pain Score,1,No,No,No,3,30_DAYS
+SFU-0008,Diabetes,31-45,Moderate,HbA1c,7.3,Yes,No,No,1,14_DAYS
+SFU-0009,Thyroid Disorder,46-60,Low,TSH,7.4,Yes,No,No,1,14_DAYS
+SFU-0010,Hypertension,31-45,Low,Systolic BP,133,No,No,No,8,30_DAYS
+SFU-0011,Asthma,18-30,Low,PEF,213,Yes,Yes,No,4,7_DAYS
+SFU-0012,Hypertension,46-60,Low,Systolic BP,123,No,No,No,7,30_DAYS
+SFU-0013,Asthma,31-45,Low,PEF,478,No,No,No,6,30_DAYS
+SFU-0014,Thyroid Disorder,46-60,Low,TSH,9.1,Yes,No,No,1,14_DAYS
+SFU-0015,Diabetes,31-45,Moderate,HbA1c,7.4,Yes,No,No,1,14_DAYS
+SFU-0016,Migraine,61-75,Moderate,Pain Score,10,Yes,No,No,0,7_DAYS
+SFU-0017,Diabetes,46-60,Moderate,HbA1c,7.7,Yes,No,No,2,14_DAYS
+SFU-0018,Asthma,31-45,Moderate,PEF,491,No,Yes,No,8,7_DAYS
+SFU-0019,Hypertension,31-45,Low,Systolic BP,105,No,Yes,No,8,14_DAYS
+SFU-0020,Migraine,46-60,Moderate,Pain Score,3,No,Yes,No,4,14_DAYS
+SFU-0021,Diabetes,31-45,High,HbA1c,9.6,Yes,No,Yes,7,3_DAYS
+SFU-0022,Migraine,31-45,Low,Pain Score,8,Yes,No,No,4,14_DAYS
+SFU-0023,Migraine,61-75,High,Pain Score,4,No,No,No,3,7_DAYS
+SFU-0024,Thyroid Disorder,46-60,Low,TSH,1.0,No,No,Yes,3,14_DAYS
+SFU-0025,Diabetes,31-45,Moderate,HbA1c,6.6,Yes,Yes,No,0,7_DAYS
+SFU-0026,Diabetes,46-60,Low,HbA1c,8.2,Yes,Yes,No,3,7_DAYS
+SFU-0027,Migraine,61-75,Low,Pain Score,1,No,No,No,1,30_DAYS
+SFU-0028,Thyroid Disorder,46-60,Low,TSH,0.9,No,No,No,1,30_DAYS
+SFU-0029,Asthma,18-30,Low,PEF,273,Yes,Yes,No,6,7_DAYS
+SFU-0030,Asthma,61-75,Low,PEF,230,Yes,No,No,8,7_DAYS
+SFU-0031,Diabetes,18-30,High,HbA1c,7.5,Yes,No,No,2,7_DAYS
+SFU-0032,Thyroid Disorder,31-45,High,TSH,11.8,Yes,No,Yes,0,3_DAYS
+SFU-0033,Asthma,61-75,Low,PEF,429,No,No,No,8,14_DAYS
+SFU-0034,Hypertension,31-45,Low,Systolic BP,112,No,No,No,8,30_DAYS
+SFU-0035,Asthma,18-30,Low,PEF,260,Yes,No,No,8,14_DAYS
+SFU-0036,Diabetes,18-30,High,HbA1c,7.5,Yes,Yes,Yes,3,3_DAYS
+SFU-0037,Migraine,31-45,Moderate,Pain Score,5,No,Yes,Yes,8,7_DAYS
+SFU-0038,Asthma,31-45,Moderate,PEF,333,No,No,No,2,30_DAYS
+SFU-0039,Thyroid Disorder,46-60,High,TSH,1.1,No,No,Yes,1,7_DAYS
+SFU-0040,Hypertension,46-60,Low,Systolic BP,152,Yes,No,Yes,3,7_DAYS
+SFU-0041,Asthma,31-45,Low,PEF,184,Yes,No,No,8,14_DAYS
+SFU-0042,Migraine,46-60,High,Pain Score,1,No,Yes,No,4,7_DAYS
+SFU-0043,Diabetes,31-45,Low,HbA1c,8.9,Yes,No,No,3,14_DAYS
+SFU-0044,Asthma,61-75,Low,PEF,321,No,No,Yes,6,7_DAYS
+SFU-0045,Diabetes,18-30,Low,HbA1c,9.2,Yes,Yes,No,2,7_DAYS
+SFU-0046,Migraine,61-75,Moderate,Pain Score,8,Yes,Yes,No,2,7_DAYS
+SFU-0047,Diabetes,46-60,Moderate,HbA1c,7.3,Yes,Yes,Yes,4,3_DAYS
+SFU-0048,Diabetes,46-60,Low,HbA1c,9.9,Yes,Yes,Yes,8,3_DAYS
+SFU-0049,Thyroid Disorder,31-45,High,TSH,10.6,Yes,Yes,Yes,2,3_DAYS
+SFU-0050,Diabetes,31-45,Moderate,HbA1c,6.8,Yes,No,No,3,14_DAYS
+SFU-0051,Diabetes,61-75,High,HbA1c,7.2,Yes,No,No,7,3_DAYS
+SFU-0052,Hypertension,31-45,Low,Systolic BP,140,Yes,Yes,No,1,7_DAYS
+SFU-0053,Asthma,61-75,Moderate,PEF,239,Yes,No,No,0,7_DAYS
+SFU-0054,Asthma,31-45,Moderate,PEF,356,No,No,Yes,6,7_DAYS
+SFU-0055,Asthma,61-75,Moderate,PEF,310,No,No,No,3,14_DAYS
+SFU-0056,Diabetes,61-75,Low,HbA1c,7.3,Yes,No,No,3,14_DAYS
+SFU-0057,Diabetes,46-60,Moderate,HbA1c,8.0,Yes,No,Yes,4,7_DAYS
+SFU-0058,Thyroid Disorder,46-60,Low,TSH,8.0,Yes,Yes,Yes,6,3_DAYS
+SFU-0059,Thyroid Disorder,31-45,Moderate,TSH,3.8,No,No,No,0,30_DAYS
+SFU-0060,Hypertension,61-75,Moderate,Systolic BP,161,Yes,No,No,7,7_DAYS
+SFU-0061,Hypertension,61-75,Moderate,Systolic BP,141,Yes,No,No,1,7_DAYS
+SFU-0062,Migraine,46-60,Low,Pain Score,3,No,No,No,4,30_DAYS
+SFU-0063,Hypertension,31-45,Low,Systolic BP,163,Yes,Yes,No,1,7_DAYS
+SFU-0064,Thyroid Disorder,31-45,Moderate,TSH,7.9,Yes,No,No,2,14_DAYS
+SFU-0065,Diabetes,18-30,Moderate,HbA1c,7.8,Yes,Yes,No,8,7_DAYS
+SFU-0066,Migraine,31-45,High,Pain Score,10,Yes,Yes,Yes,7,3_DAYS
+SFU-0067,Migraine,46-60,High,Pain Score,6,No,No,No,8,7_DAYS
+SFU-0068,Migraine,61-75,High,Pain Score,3,No,No,No,4,7_DAYS
+SFU-0069,Asthma,61-75,Moderate,PEF,300,No,Yes,Yes,4,7_DAYS
+SFU-0070,Asthma,46-60,Low,PEF,376,No,No,Yes,3,14_DAYS
+SFU-0071,Hypertension,31-45,Low,Systolic BP,112,No,No,No,6,30_DAYS
+SFU-0072,Hypertension,61-75,Low,Systolic BP,153,Yes,No,No,0,14_DAYS
+SFU-0073,Thyroid Disorder,18-30,High,TSH,6.6,Yes,Yes,No,6,3_DAYS
+SFU-0074,Migraine,31-45,Moderate,Pain Score,5,No,Yes,No,6,7_DAYS
+SFU-0075,Thyroid Disorder,31-45,Moderate,TSH,0.5,No,No,No,8,14_DAYS
+SFU-0076,Thyroid Disorder,18-30,Low,TSH,0.8,No,No,No,2,30_DAYS
+SFU-0077,Thyroid Disorder,46-60,Low,TSH,3.5,No,No,No,6,30_DAYS
+SFU-0078,Thyroid Disorder,46-60,Moderate,TSH,12.0,Yes,No,No,0,14_DAYS
+SFU-0079,Asthma,31-45,Moderate,PEF,306,No,No,No,0,30_DAYS
+SFU-0080,Hypertension,18-30,Moderate,Systolic BP,132,No,Yes,No,1,14_DAYS
+SFU-0081,Thyroid Disorder,46-60,Moderate,TSH,9.4,Yes,Yes,No,1,7_DAYS
+SFU-0082,Hypertension,46-60,Low,Systolic BP,155,Yes,Yes,No,6,7_DAYS
+SFU-0083,Hypertension,18-30,Moderate,Systolic BP,120,No,No,No,4,30_DAYS
+SFU-0084,Migraine,18-30,Low,Pain Score,10,Yes,No,No,8,14_DAYS
+SFU-0085,Asthma,18-30,Moderate,PEF,415,No,No,Yes,5,7_DAYS
+SFU-0086,Hypertension,61-75,Low,Systolic BP,166,Yes,No,No,8,7_DAYS
+SFU-0087,Thyroid Disorder,61-75,Moderate,TSH,10.0,Yes,No,No,3,7_DAYS
+SFU-0088,Diabetes,46-60,High,HbA1c,7.1,Yes,Yes,No,6,3_DAYS
+SFU-0089,Thyroid Disorder,46-60,Low,TSH,3.5,No,Yes,No,5,14_DAYS
+SFU-0090,Migraine,46-60,Moderate,Pain Score,6,No,No,No,3,30_DAYS
+SFU-0091,Thyroid Disorder,31-45,Moderate,TSH,1.3,No,No,No,0,30_DAYS
+SFU-0092,Hypertension,61-75,Moderate,Systolic BP,175,Yes,No,No,7,7_DAYS
+SFU-0093,Migraine,46-60,Low,Pain Score,4,No,No,No,7,30_DAYS
+SFU-0094,Asthma,46-60,Low,PEF,274,Yes,No,No,8,14_DAYS
+SFU-0095,Hypertension,31-45,Moderate,Systolic BP,141,Yes,Yes,No,8,7_DAYS
+SFU-0096,Diabetes,31-45,Low,HbA1c,6.0,No,No,No,8,30_DAYS
+SFU-0097,Diabetes,18-30,Moderate,HbA1c,5.9,No,No,Yes,7,7_DAYS
+SFU-0098,Diabetes,46-60,Moderate,HbA1c,6.7,Yes,No,No,0,14_DAYS
+SFU-0099,Thyroid Disorder,18-30,Moderate,TSH,2.0,No,No,Yes,0,14_DAYS
+SFU-0100,Migraine,46-60,Low,Pain Score,9,Yes,Yes,No,6,7_DAYS
+SFU-0101,Migraine,31-45,Moderate,Pain Score,9,Yes,No,No,4,14_DAYS
+SFU-0102,Thyroid Disorder,46-60,Moderate,TSH,11.4,Yes,Yes,No,1,7_DAYS
+SFU-0103,Hypertension,31-45,Low,Systolic BP,114,No,Yes,No,8,14_DAYS
+SFU-0104,Hypertension,18-30,Low,Systolic BP,134,No,No,No,0,30_DAYS
+SFU-0105,Asthma,46-60,Moderate,PEF,500,No,No,No,4,30_DAYS
+SFU-0106,Migraine,31-45,Low,Pain Score,2,No,No,No,4,30_DAYS
+SFU-0107,Diabetes,18-30,Low,HbA1c,7.6,Yes,No,No,4,14_DAYS
+SFU-0108,Thyroid Disorder,46-60,Moderate,TSH,5.4,Yes,No,No,7,7_DAYS
+SFU-0109,Migraine,18-30,High,Pain Score,1,No,No,No,0,14_DAYS
+SFU-0110,Hypertension,18-30,High,Systolic BP,127,No,No,No,0,14_DAYS
+SFU-0111,Thyroid Disorder,61-75,High,TSH,11.6,Yes,Yes,No,7,3_DAYS
+SFU-0112,Thyroid Disorder,46-60,Low,TSH,4.1,Yes,No,Yes,2,7_DAYS
+SFU-0113,Thyroid Disorder,46-60,Moderate,TSH,5.6,Yes,No,No,0,14_DAYS
+SFU-0114,Asthma,46-60,Low,PEF,180,Yes,No,No,8,14_DAYS
+SFU-0115,Migraine,61-75,Low,Pain Score,10,Yes,Yes,No,7,7_DAYS
+SFU-0116,Thyroid Disorder,18-30,Low,TSH,10.6,Yes,No,No,7,14_DAYS
+SFU-0117,Thyroid Disorder,18-30,Low,TSH,3.9,No,No,No,2,30_DAYS
+SFU-0118,Diabetes,61-75,Low,HbA1c,10.2,Yes,No,No,7,7_DAYS
+SFU-0119,Hypertension,61-75,High,Systolic BP,166,Yes,Yes,No,6,3_DAYS
+SFU-0120,Thyroid Disorder,31-45,Moderate,TSH,9.0,Yes,Yes,No,8,7_DAYS
+SFU-0121,Hypertension,18-30,Low,Systolic BP,139,No,No,No,8,30_DAYS
+SFU-0122,Diabetes,46-60,Moderate,HbA1c,9.8,Yes,No,No,7,7_DAYS
+SFU-0123,Thyroid Disorder,61-75,Low,TSH,11.2,Yes,No,No,7,7_DAYS
+SFU-0124,Hypertension,31-45,Moderate,Systolic BP,145,Yes,Yes,No,0,7_DAYS
+SFU-0125,Thyroid Disorder,61-75,Low,TSH,6.0,Yes,No,No,2,14_DAYS
+SFU-0126,Diabetes,31-45,Moderate,HbA1c,5.9,No,No,No,7,14_DAYS
+SFU-0127,Thyroid Disorder,18-30,Moderate,TSH,1.1,No,No,No,2,30_DAYS
+SFU-0128,Asthma,46-60,Moderate,PEF,453,No,No,Yes,5,7_DAYS
+SFU-0129,Thyroid Disorder,46-60,Moderate,TSH,0.6,No,No,No,8,14_DAYS
+SFU-0130,Diabetes,31-45,Moderate,HbA1c,7.6,Yes,No,No,1,14_DAYS
+SFU-0131,Diabetes,18-30,Low,HbA1c,7.1,Yes,No,No,0,14_DAYS
+SFU-0132,Diabetes,46-60,Low,HbA1c,8.3,Yes,No,No,6,14_DAYS
+SFU-0133,Hypertension,31-45,Low,Systolic BP,168,Yes,No,No,3,14_DAYS
+SFU-0134,Migraine,31-45,Low,Pain Score,7,Yes,No,No,0,14_DAYS
+SFU-0135,Asthma,31-45,Low,PEF,397,No,No,No,4,30_DAYS
+SFU-0136,Asthma,61-75,Moderate,PEF,234,Yes,Yes,No,7,3_DAYS
+SFU-0137,Hypertension,61-75,Moderate,Systolic BP,107,No,No,No,4,14_DAYS
+SFU-0138,Thyroid Disorder,46-60,Low,TSH,10.9,Yes,No,No,0,14_DAYS
+SFU-0139,Thyroid Disorder,46-60,Moderate,TSH,7.7,Yes,Yes,No,3,7_DAYS
+SFU-0140,Migraine,46-60,Moderate,Pain Score,10,Yes,No,No,2,14_DAYS
+SFU-0141,Diabetes,18-30,Low,HbA1c,5.9,No,No,No,2,30_DAYS
+SFU-0142,Asthma,46-60,Moderate,PEF,367,No,Yes,Yes,8,7_DAYS
+SFU-0143,Migraine,46-60,Moderate,Pain Score,4,No,Yes,No,7,7_DAYS
+SFU-0144,Asthma,18-30,Moderate,PEF,383,No,Yes,No,3,14_DAYS
+SFU-0145,Migraine,46-60,Low,Pain Score,7,Yes,No,No,1,14_DAYS
+SFU-0146,Asthma,46-60,Moderate,PEF,299,Yes,No,No,1,14_DAYS
+SFU-0147,Thyroid Disorder,18-30,Moderate,TSH,7.8,Yes,No,No,3,14_DAYS
+SFU-0148,Thyroid Disorder,46-60,Moderate,TSH,3.8,No,Yes,Yes,0,7_DAYS
+SFU-0149,Thyroid Disorder,18-30,Low,TSH,4.6,Yes,No,Yes,7,7_DAYS
+SFU-0150,Migraine,61-75,Moderate,Pain Score,7,Yes,No,No,1,7_DAYS
+SFU-0151,Migraine,61-75,High,Pain Score,7,Yes,Yes,No,3,3_DAYS
+SFU-0152,Thyroid Disorder,31-45,High,TSH,10.8,Yes,Yes,No,8,3_DAYS
+SFU-0153,Asthma,18-30,Low,PEF,226,Yes,Yes,Yes,7,3_DAYS
+SFU-0154,Hypertension,18-30,Low,Systolic BP,113,No,No,No,3,30_DAYS
+SFU-0155,Migraine,31-45,Moderate,Pain Score,9,Yes,No,No,2,14_DAYS
+SFU-0156,Diabetes,46-60,High,HbA1c,9.5,Yes,Yes,Yes,4,3_DAYS
+SFU-0157,Diabetes,18-30,Low,HbA1c,5.5,No,No,No,5,30_DAYS
+SFU-0158,Asthma,18-30,Low,PEF,423,No,No,Yes,1,14_DAYS
+SFU-0159,Thyroid Disorder,46-60,Moderate,TSH,8.8,Yes,Yes,No,0,7_DAYS
+SFU-0160,Migraine,46-60,Moderate,Pain Score,6,No,No,Yes,7,7_DAYS
+SFU-0161,Thyroid Disorder,18-30,Moderate,TSH,4.0,No,No,Yes,1,14_DAYS
+SFU-0162,Hypertension,18-30,Low,Systolic BP,153,Yes,No,No,5,14_DAYS
+SFU-0163,Migraine,46-60,Moderate,Pain Score,10,Yes,No,Yes,1,7_DAYS
+SFU-0164,Migraine,31-45,Low,Pain Score,6,No,No,No,7,30_DAYS
+SFU-0165,Thyroid Disorder,18-30,Low,TSH,8.3,Yes,No,No,2,14_DAYS
+SFU-0166,Thyroid Disorder,18-30,Low,TSH,9.8,Yes,Yes,No,5,7_DAYS
+SFU-0167,Migraine,18-30,Moderate,Pain Score,6,No,No,No,1,30_DAYS
+SFU-0168,Asthma,61-75,High,PEF,360,No,No,No,4,7_DAYS
+SFU-0169,Diabetes,31-45,Low,HbA1c,9.7,Yes,No,No,5,14_DAYS
+SFU-0170,Asthma,18-30,Moderate,PEF,498,No,No,No,8,14_DAYS
+SFU-0171,Migraine,18-30,Moderate,Pain Score,2,No,No,No,0,30_DAYS
+SFU-0172,Asthma,46-60,High,PEF,469,No,No,No,2,14_DAYS
+SFU-0173,Thyroid Disorder,18-30,Low,TSH,2.7,No,No,Yes,8,14_DAYS
+SFU-0174,Thyroid Disorder,61-75,Low,TSH,10.6,Yes,No,No,1,14_DAYS
+SFU-0175,Hypertension,31-45,Moderate,Systolic BP,159,Yes,Yes,Yes,7,3_DAYS
+SFU-0176,Thyroid Disorder,61-75,Low,TSH,5.3,Yes,Yes,No,5,7_DAYS
+SFU-0177,Asthma,61-75,Moderate,PEF,183,Yes,No,No,0,7_DAYS
+SFU-0178,Hypertension,46-60,High,Systolic BP,146,Yes,No,No,4,7_DAYS
+SFU-0179,Diabetes,18-30,Moderate,HbA1c,9.0,Yes,No,Yes,8,7_DAYS
+SFU-0180,Migraine,46-60,Low,Pain Score,7,Yes,No,Yes,0,7_DAYS
+SFU-0181,Diabetes,46-60,Moderate,HbA1c,6.9,Yes,No,No,6,7_DAYS
+SFU-0182,Thyroid Disorder,18-30,High,TSH,10.0,Yes,Yes,No,7,3_DAYS
+SFU-0183,Asthma,18-30,Low,PEF,448,No,Yes,No,6,14_DAYS
+SFU-0184,Diabetes,61-75,High,HbA1c,5.8,No,No,No,2,7_DAYS
+SFU-0185,Diabetes,31-45,High,HbA1c,6.6,Yes,No,No,2,7_DAYS
+SFU-0186,Hypertension,46-60,Low,Systolic BP,127,No,No,No,1,30_DAYS
+SFU-0187,Thyroid Disorder,61-75,Moderate,TSH,10.4,Yes,No,No,5,7_DAYS
+SFU-0188,Asthma,31-45,Low,PEF,482,No,No,No,4,30_DAYS
+SFU-0189,Diabetes,46-60,Moderate,HbA1c,7.3,Yes,No,No,0,14_DAYS
+SFU-0190,Asthma,18-30,Moderate,PEF,376,No,No,Yes,8,7_DAYS
+SFU-0191,Thyroid Disorder,18-30,Low,TSH,7.3,Yes,No,No,5,14_DAYS
+SFU-0192,Migraine,31-45,High,Pain Score,1,No,No,No,5,7_DAYS
+SFU-0193,Migraine,31-45,Low,Pain Score,8,Yes,No,No,8,14_DAYS
+SFU-0194,Migraine,31-45,Low,Pain Score,10,Yes,No,No,5,14_DAYS
+SFU-0195,Migraine,18-30,Moderate,Pain Score,8,Yes,No,Yes,1,7_DAYS
+SFU-0196,Thyroid Disorder,46-60,Low,TSH,4.1,Yes,No,No,2,14_DAYS
+SFU-0197,Migraine,31-45,High,Pain Score,2,No,No,No,6,7_DAYS
+SFU-0198,Migraine,18-30,Low,Pain Score,10,Yes,No,No,2,14_DAYS
+SFU-0199,Migraine,18-30,Moderate,Pain Score,4,No,No,No,5,14_DAYS
+SFU-0200,Hypertension,31-45,Low,Systolic BP,124,No,No,No,2,30_DAYS
+SFU-0201,Diabetes,46-60,Moderate,HbA1c,5.6,No,Yes,No,8,7_DAYS
+SFU-0202,Asthma,31-45,Moderate,PEF,404,No,Yes,No,2,14_DAYS
+SFU-0203,Diabetes,61-75,Low,HbA1c,9.2,Yes,No,No,4,14_DAYS
+SFU-0204,Thyroid Disorder,31-45,Moderate,TSH,10.9,Yes,No,No,7,7_DAYS
+SFU-0205,Hypertension,46-60,Moderate,Systolic BP,153,Yes,No,No,4,14_DAYS
+SFU-0206,Migraine,61-75,High,Pain Score,4,No,No,No,2,7_DAYS
+SFU-0207,Diabetes,61-75,High,HbA1c,9.7,Yes,No,Yes,8,3_DAYS
+SFU-0208,Asthma,18-30,Moderate,PEF,403,No,Yes,No,2,14_DAYS
+SFU-0209,Diabetes,31-45,Moderate,HbA1c,5.7,No,No,No,6,14_DAYS
+SFU-0210,Migraine,46-60,Low,Pain Score,5,No,No,No,0,30_DAYS
+SFU-0211,Diabetes,46-60,Moderate,HbA1c,8.9,Yes,Yes,No,7,7_DAYS
+SFU-0212,Hypertension,61-75,Low,Systolic BP,132,No,Yes,Yes,4,7_DAYS
+SFU-0213,Hypertension,61-75,Low,Systolic BP,135,No,Yes,No,0,14_DAYS
+SFU-0214,Thyroid Disorder,61-75,Low,TSH,0.4,No,No,No,8,14_DAYS
+SFU-0215,Migraine,31-45,Moderate,Pain Score,3,No,Yes,Yes,5,7_DAYS
+SFU-0216,Migraine,61-75,Low,Pain Score,1,No,No,No,5,14_DAYS
+SFU-0217,Migraine,18-30,Low,Pain Score,4,No,No,No,5,30_DAYS
+SFU-0218,Diabetes,46-60,Moderate,HbA1c,9.3,Yes,No,No,1,14_DAYS
+SFU-0219,Asthma,31-45,Low,PEF,417,No,No,No,2,30_DAYS
+SFU-0220,Thyroid Disorder,31-45,Moderate,TSH,0.6,No,Yes,No,7,7_DAYS
+SFU-0221,Hypertension,18-30,Moderate,Systolic BP,170,Yes,No,No,4,14_DAYS
+SFU-0222,Thyroid Disorder,61-75,Low,TSH,10.4,Yes,No,No,5,7_DAYS
+SFU-0223,Diabetes,46-60,Low,HbA1c,9.2,Yes,No,No,6,14_DAYS
+SFU-0224,Thyroid Disorder,46-60,High,TSH,3.3,No,No,No,8,7_DAYS
+SFU-0225,Diabetes,61-75,Low,HbA1c,6.9,Yes,No,No,8,7_DAYS
+SFU-0226,Diabetes,18-30,Low,HbA1c,6.2,No,Yes,No,6,14_DAYS
+SFU-0227,Thyroid Disorder,46-60,Low,TSH,3.4,No,No,No,6,30_DAYS
+SFU-0228,Diabetes,18-30,Moderate,HbA1c,10.3,Yes,No,No,2,14_DAYS
+SFU-0229,Hypertension,61-75,Low,Systolic BP,151,Yes,Yes,No,5,7_DAYS
+SFU-0230,Thyroid Disorder,18-30,Moderate,TSH,5.4,Yes,No,No,5,7_DAYS
+SFU-0231,Diabetes,31-45,Moderate,HbA1c,10.3,Yes,No,No,3,14_DAYS
+SFU-0232,Diabetes,31-45,Moderate,HbA1c,9.4,Yes,No,No,4,14_DAYS
+SFU-0233,Thyroid Disorder,31-45,High,TSH,2.6,No,Yes,No,7,7_DAYS
+SFU-0234,Hypertension,18-30,Moderate,Systolic BP,145,Yes,No,No,1,14_DAYS
+SFU-0235,Asthma,18-30,Moderate,PEF,269,Yes,Yes,No,2,7_DAYS
+SFU-0236,Asthma,31-45,Low,PEF,193,Yes,Yes,Yes,7,3_DAYS
+SFU-0237,Asthma,46-60,Moderate,PEF,213,Yes,No,Yes,1,7_DAYS
+SFU-0238,Asthma,61-75,High,PEF,474,No,No,No,6,7_DAYS
+SFU-0239,Diabetes,31-45,High,HbA1c,7.2,Yes,No,No,8,7_DAYS
+SFU-0240,Migraine,31-45,Moderate,Pain Score,1,No,Yes,No,0,14_DAYS
+SFU-0241,Migraine,31-45,Low,Pain Score,5,No,Yes,No,3,14_DAYS
+SFU-0242,Migraine,46-60,Moderate,Pain Score,4,No,Yes,No,8,7_DAYS
+SFU-0243,Hypertension,46-60,Moderate,Systolic BP,126,No,Yes,No,2,14_DAYS
+SFU-0244,Migraine,46-60,Moderate,Pain Score,1,No,No,No,0,30_DAYS
+SFU-0245,Diabetes,46-60,Moderate,HbA1c,7.9,Yes,No,No,0,14_DAYS
+SFU-0246,Migraine,46-60,Moderate,Pain Score,4,No,No,No,6,14_DAYS
+SFU-0247,Thyroid Disorder,18-30,Moderate,TSH,2.6,No,Yes,No,7,7_DAYS
+SFU-0248,Migraine,31-45,Low,Pain Score,6,No,No,No,5,30_DAYS
+SFU-0249,Hypertension,46-60,Moderate,Systolic BP,139,No,Yes,No,1,14_DAYS
+SFU-0250,Thyroid Disorder,31-45,Low,TSH,3.1,No,Yes,No,6,14_DAYS
+SFU-0251,Hypertension,46-60,High,Systolic BP,168,Yes,No,No,2,7_DAYS
+SFU-0252,Migraine,61-75,Moderate,Pain Score,8,Yes,No,Yes,6,3_DAYS
+SFU-0253,Thyroid Disorder,31-45,Low,TSH,7.3,Yes,No,Yes,7,7_DAYS
+SFU-0254,Thyroid Disorder,46-60,Moderate,TSH,8.8,Yes,No,No,4,14_DAYS
+SFU-0255,Thyroid Disorder,46-60,Low,TSH,6.7,Yes,Yes,No,5,7_DAYS
+SFU-0256,Diabetes,61-75,Moderate,HbA1c,6.1,No,No,No,1,14_DAYS
+SFU-0257,Diabetes,61-75,Low,HbA1c,9.3,Yes,No,No,5,7_DAYS
+SFU-0258,Hypertension,61-75,Moderate,Systolic BP,165,Yes,Yes,Yes,5,3_DAYS
+SFU-0259,Migraine,61-75,Low,Pain Score,2,No,No,Yes,5,7_DAYS
+SFU-0260,Thyroid Disorder,46-60,Moderate,TSH,8.6,Yes,No,No,7,7_DAYS
+SFU-0261,Asthma,61-75,Moderate,PEF,478,No,No,No,6,14_DAYS
+SFU-0262,Asthma,18-30,Moderate,PEF,206,Yes,Yes,No,3,7_DAYS
+SFU-0263,Migraine,61-75,Low,Pain Score,2,No,No,No,6,14_DAYS
+SFU-0264,Hypertension,18-30,Moderate,Systolic BP,145,Yes,No,No,7,7_DAYS
+SFU-0265,Thyroid Disorder,31-45,Low,TSH,10.5,Yes,Yes,No,7,7_DAYS
+SFU-0266,Diabetes,31-45,Moderate,HbA1c,8.1,Yes,No,No,7,7_DAYS
+SFU-0267,Asthma,31-45,Moderate,PEF,492,No,No,No,4,30_DAYS
+SFU-0268,Thyroid Disorder,31-45,High,TSH,9.3,Yes,Yes,No,4,3_DAYS
+SFU-0269,Hypertension,61-75,Low,Systolic BP,141,Yes,No,No,4,14_DAYS
+SFU-0270,Diabetes,61-75,High,HbA1c,6.9,Yes,No,No,2,7_DAYS
+SFU-0271,Asthma,18-30,Low,PEF,289,Yes,No,No,7,14_DAYS
+SFU-0272,Hypertension,46-60,High,Systolic BP,136,No,No,Yes,3,7_DAYS
+SFU-0273,Diabetes,31-45,Moderate,HbA1c,5.9,No,Yes,No,7,7_DAYS
+SFU-0274,Hypertension,18-30,High,Systolic BP,166,Yes,No,Yes,7,3_DAYS
+SFU-0275,Hypertension,46-60,Low,Systolic BP,134,No,No,No,1,30_DAYS
+SFU-0276,Migraine,18-30,High,Pain Score,0,No,Yes,No,2,7_DAYS
+SFU-0277,Thyroid Disorder,61-75,Low,TSH,10.5,Yes,No,No,4,14_DAYS
+SFU-0278,Diabetes,46-60,Moderate,HbA1c,7.7,Yes,Yes,No,4,7_DAYS
+SFU-0279,Migraine,61-75,High,Pain Score,3,No,Yes,No,4,7_DAYS
+SFU-0280,Diabetes,46-60,Low,HbA1c,5.5,No,No,No,2,30_DAYS
+SFU-0281,Asthma,46-60,Moderate,PEF,398,No,No,Yes,6,7_DAYS
+SFU-0282,Migraine,46-60,Low,Pain Score,7,Yes,No,No,2,14_DAYS
+SFU-0283,Asthma,31-45,Low,PEF,348,No,No,No,4,30_DAYS
+SFU-0284,Asthma,18-30,Low,PEF,418,No,No,No,1,30_DAYS
+SFU-0285,Asthma,31-45,Low,PEF,240,Yes,No,No,4,14_DAYS
+SFU-0286,Asthma,46-60,Moderate,PEF,412,No,Yes,Yes,2,7_DAYS
+SFU-0287,Migraine,46-60,Low,Pain Score,10,Yes,No,No,8,14_DAYS
+SFU-0288,Hypertension,31-45,Moderate,Systolic BP,162,Yes,No,No,8,7_DAYS
+SFU-0289,Migraine,46-60,Low,Pain Score,8,Yes,No,Yes,8,7_DAYS
+SFU-0290,Hypertension,31-45,Low,Systolic BP,167,Yes,No,No,3,14_DAYS
+SFU-0291,Diabetes,61-75,Moderate,HbA1c,8.3,Yes,No,No,7,7_DAYS
+SFU-0292,Migraine,61-75,Moderate,Pain Score,0,No,No,Yes,4,7_DAYS
+SFU-0293,Hypertension,18-30,Low,Systolic BP,113,No,No,Yes,0,14_DAYS
+SFU-0294,Thyroid Disorder,18-30,Low,TSH,4.6,Yes,Yes,Yes,6,3_DAYS
+SFU-0295,Thyroid Disorder,61-75,High,TSH,1.8,No,No,No,8,7_DAYS
+SFU-0296,Asthma,18-30,Low,PEF,181,Yes,No,No,3,14_DAYS
+SFU-0297,Diabetes,46-60,Moderate,HbA1c,9.6,Yes,No,No,6,7_DAYS
+SFU-0298,Hypertension,61-75,Low,Systolic BP,109,No,Yes,No,1,14_DAYS
+SFU-0299,Thyroid Disorder,18-30,Low,TSH,7.3,Yes,Yes,No,7,7_DAYS
+SFU-0300,Diabetes,31-45,Moderate,HbA1c,9.2,Yes,No,No,3,14_DAYS
+SFU-0301,Diabetes,31-45,Moderate,HbA1c,8.3,Yes,Yes,No,5,7_DAYS
+SFU-0302,Asthma,31-45,Low,PEF,391,No,Yes,No,3,14_DAYS
+SFU-0303,Asthma,46-60,Low,PEF,500,No,No,No,2,30_DAYS
+SFU-0304,Thyroid Disorder,61-75,Low,TSH,9.5,Yes,No,No,6,7_DAYS
+SFU-0305,Asthma,61-75,Low,PEF,422,No,Yes,No,8,7_DAYS
+SFU-0306,Hypertension,31-45,Low,Systolic BP,157,Yes,No,No,0,14_DAYS
+SFU-0307,Thyroid Disorder,31-45,Low,TSH,11.1,Yes,Yes,No,1,7_DAYS
+SFU-0308,Asthma,18-30,Moderate,PEF,489,No,No,Yes,6,7_DAYS
+SFU-0309,Migraine,18-30,High,Pain Score,3,No,Yes,No,8,7_DAYS
+SFU-0310,Thyroid Disorder,31-45,High,TSH,2.7,No,No,No,0,14_DAYS
+SFU-0311,Hypertension,18-30,Moderate,Systolic BP,155,Yes,No,No,3,14_DAYS
+SFU-0312,Hypertension,46-60,Moderate,Systolic BP,144,Yes,No,No,5,7_DAYS
+SFU-0313,Asthma,46-60,Moderate,PEF,343,No,No,Yes,7,7_DAYS
+SFU-0314,Hypertension,46-60,Low,Systolic BP,107,No,Yes,No,2,14_DAYS
+SFU-0315,Asthma,61-75,Low,PEF,435,No,Yes,No,3,14_DAYS
+SFU-0316,Migraine,46-60,Low,Pain Score,7,Yes,No,No,7,14_DAYS
+SFU-0317,Hypertension,46-60,Low,Systolic BP,112,No,No,No,8,30_DAYS
+SFU-0318,Migraine,18-30,Moderate,Pain Score,0,No,Yes,No,0,14_DAYS
+SFU-0319,Thyroid Disorder,31-45,Moderate,TSH,2.8,No,Yes,No,0,14_DAYS
+SFU-0320,Thyroid Disorder,46-60,Low,TSH,8.0,Yes,No,No,7,14_DAYS
+SFU-0321,Diabetes,18-30,Moderate,HbA1c,8.1,Yes,No,Yes,4,7_DAYS
+SFU-0322,Asthma,18-30,Moderate,PEF,234,Yes,No,No,2,14_DAYS
+SFU-0323,Diabetes,31-45,Low,HbA1c,6.8,Yes,No,No,5,14_DAYS
+SFU-0324,Thyroid Disorder,18-30,Low,TSH,3.7,No,No,No,3,30_DAYS
+SFU-0325,Diabetes,18-30,Low,HbA1c,8.6,Yes,No,No,0,14_DAYS
+SFU-0326,Hypertension,18-30,Moderate,Systolic BP,172,Yes,No,No,1,14_DAYS
+SFU-0327,Diabetes,31-45,Low,HbA1c,6.8,Yes,No,No,7,14_DAYS
+SFU-0328,Diabetes,46-60,High,HbA1c,5.5,No,No,Yes,5,7_DAYS
+SFU-0329,Hypertension,31-45,Moderate,Systolic BP,143,Yes,No,No,1,14_DAYS
+SFU-0330,Hypertension,31-45,Moderate,Systolic BP,147,Yes,No,No,8,7_DAYS
+SFU-0331,Thyroid Disorder,31-45,Moderate,TSH,0.8,No,No,Yes,5,7_DAYS
+SFU-0332,Thyroid Disorder,31-45,Moderate,TSH,11.6,Yes,No,No,6,7_DAYS
+SFU-0333,Asthma,18-30,Moderate,PEF,362,No,No,No,3,30_DAYS
+SFU-0334,Migraine,61-75,Low,Pain Score,9,Yes,No,No,1,14_DAYS
+SFU-0335,Asthma,31-45,Moderate,PEF,379,No,Yes,Yes,2,7_DAYS
+SFU-0336,Asthma,46-60,Low,PEF,318,No,Yes,No,5,14_DAYS
+SFU-0337,Diabetes,31-45,Low,HbA1c,7.5,Yes,No,No,8,14_DAYS
+SFU-0338,Diabetes,18-30,Low,HbA1c,9.8,Yes,Yes,No,5,7_DAYS
+SFU-0339,Diabetes,46-60,Low,HbA1c,10.0,Yes,No,No,8,14_DAYS
+SFU-0340,Hypertension,31-45,Moderate,Systolic BP,168,Yes,Yes,No,4,7_DAYS
+SFU-0341,Hypertension,18-30,Low,Systolic BP,151,Yes,Yes,No,1,7_DAYS
+SFU-0342,Asthma,31-45,Moderate,PEF,234,Yes,No,No,7,7_DAYS
+SFU-0343,Hypertension,46-60,Low,Systolic BP,147,Yes,No,No,6,14_DAYS
+SFU-0344,Thyroid Disorder,46-60,Low,TSH,3.7,No,No,No,2,30_DAYS
+SFU-0345,Migraine,31-45,Moderate,Pain Score,4,No,Yes,No,5,7_DAYS
+SFU-0346,Thyroid Disorder,31-45,Low,TSH,1.5,No,Yes,No,5,14_DAYS
+SFU-0347,Migraine,31-45,Moderate,Pain Score,0,No,No,No,8,14_DAYS
+SFU-0348,Thyroid Disorder,31-45,Low,TSH,8.1,Yes,Yes,No,6,7_DAYS
+SFU-0349,Hypertension,46-60,Low,Systolic BP,114,No,No,No,6,30_DAYS
+SFU-0350,Thyroid Disorder,61-75,Moderate,TSH,6.6,Yes,No,No,6,7_DAYS
+SFU-0351,Asthma,18-30,Low,PEF,493,No,Yes,No,2,14_DAYS
+SFU-0352,Diabetes,61-75,High,HbA1c,5.5,No,No,No,1,7_DAYS
+SFU-0353,Asthma,31-45,Moderate,PEF,408,No,No,No,3,30_DAYS
+SFU-0354,Asthma,61-75,Moderate,PEF,356,No,No,No,2,14_DAYS
+SFU-0355,Diabetes,61-75,Low,HbA1c,9.6,Yes,No,No,1,14_DAYS
+SFU-0356,Hypertension,46-60,Low,Systolic BP,149,Yes,No,No,7,14_DAYS
+SFU-0357,Thyroid Disorder,18-30,Low,TSH,0.7,No,No,No,4,30_DAYS
+SFU-0358,Diabetes,18-30,Moderate,HbA1c,10.1,Yes,No,No,2,14_DAYS
+SFU-0359,Hypertension,31-45,Moderate,Systolic BP,134,No,No,No,7,14_DAYS
+SFU-0360,Thyroid Disorder,31-45,Low,TSH,5.5,Yes,No,No,3,14_DAYS
+SFU-0361,Thyroid Disorder,61-75,Low,TSH,7.0,Yes,Yes,No,1,7_DAYS
+SFU-0362,Migraine,31-45,Low,Pain Score,8,Yes,Yes,Yes,7,3_DAYS
+SFU-0363,Asthma,61-75,Moderate,PEF,496,No,No,No,7,14_DAYS
+SFU-0364,Hypertension,46-60,High,Systolic BP,120,No,No,No,5,7_DAYS
+SFU-0365,Hypertension,46-60,Low,Systolic BP,158,Yes,No,Yes,6,7_DAYS
+SFU-0366,Migraine,31-45,Moderate,Pain Score,10,Yes,No,No,8,7_DAYS
+SFU-0367,Hypertension,31-45,Moderate,Systolic BP,111,No,Yes,No,7,7_DAYS
+SFU-0368,Asthma,18-30,Moderate,PEF,438,No,Yes,No,8,7_DAYS
+SFU-0369,Thyroid Disorder,61-75,Moderate,TSH,2.2,No,No,No,7,14_DAYS
+SFU-0370,Migraine,18-30,Moderate,Pain Score,8,Yes,Yes,Yes,3,3_DAYS
+SFU-0371,Asthma,31-45,Moderate,PEF,461,No,No,No,7,14_DAYS
+SFU-0372,Migraine,18-30,Moderate,Pain Score,8,Yes,Yes,No,5,7_DAYS
+SFU-0373,Diabetes,61-75,Moderate,HbA1c,6.9,Yes,No,Yes,3,7_DAYS
+SFU-0374,Diabetes,61-75,Low,HbA1c,9.4,Yes,No,Yes,1,7_DAYS
+SFU-0375,Hypertension,31-45,Moderate,Systolic BP,126,No,No,No,6,14_DAYS
+SFU-0376,Migraine,31-45,Moderate,Pain Score,8,Yes,No,No,5,7_DAYS
+SFU-0377,Asthma,31-45,Low,PEF,443,No,No,No,4,30_DAYS
+SFU-0378,Diabetes,31-45,High,HbA1c,9.8,Yes,No,No,4,7_DAYS
+SFU-0379,Hypertension,31-45,Low,Systolic BP,167,Yes,No,No,6,14_DAYS
+SFU-0380,Hypertension,46-60,Moderate,Systolic BP,156,Yes,No,Yes,1,7_DAYS
+SFU-0381,Migraine,46-60,Moderate,Pain Score,5,No,No,No,7,14_DAYS
+SFU-0382,Migraine,18-30,High,Pain Score,10,Yes,No,Yes,7,3_DAYS
+SFU-0383,Asthma,18-30,Moderate,PEF,433,No,No,No,3,30_DAYS
+SFU-0384,Asthma,46-60,Moderate,PEF,355,No,No,No,7,14_DAYS
+SFU-0385,Diabetes,18-30,Low,HbA1c,10.1,Yes,No,No,1,14_DAYS
+SFU-0386,Hypertension,61-75,Moderate,Systolic BP,143,Yes,No,No,2,7_DAYS
+SFU-0387,Hypertension,46-60,Low,Systolic BP,111,No,No,Yes,2,14_DAYS
+SFU-0388,Thyroid Disorder,46-60,Moderate,TSH,8.5,Yes,No,No,1,14_DAYS
+SFU-0389,Diabetes,31-45,Moderate,HbA1c,5.4,No,Yes,No,7,7_DAYS
+SFU-0390,Asthma,18-30,High,PEF,297,Yes,No,Yes,1,3_DAYS
+SFU-0391,Thyroid Disorder,18-30,Moderate,TSH,1.8,No,Yes,No,4,14_DAYS
+SFU-0392,Hypertension,31-45,Low,Systolic BP,161,Yes,No,No,2,14_DAYS
+SFU-0393,Asthma,31-45,Moderate,PEF,291,Yes,Yes,No,7,7_DAYS
+SFU-0394,Diabetes,18-30,Low,HbA1c,10.3,Yes,Yes,No,5,7_DAYS
+SFU-0395,Asthma,31-45,Low,PEF,193,Yes,No,No,4,14_DAYS
+SFU-0396,Asthma,31-45,Moderate,PEF,207,Yes,No,No,4,14_DAYS
+SFU-0397,Hypertension,61-75,Low,Systolic BP,172,Yes,Yes,No,1,7_DAYS
+SFU-0398,Diabetes,46-60,High,HbA1c,7.3,Yes,Yes,No,6,3_DAYS
+SFU-0399,Hypertension,61-75,High,Systolic BP,106,No,No,Yes,1,7_DAYS
+SFU-0400,Asthma,31-45,Low,PEF,326,No,Yes,No,8,14_DAYS
+SFU-0401,Migraine,61-75,Low,Pain Score,9,Yes,No,No,8,7_DAYS
+SFU-0402,Hypertension,46-60,Low,Systolic BP,173,Yes,Yes,No,2,7_DAYS
+SFU-0403,Asthma,61-75,Moderate,PEF,338,No,No,No,1,14_DAYS
+SFU-0404,Thyroid Disorder,31-45,Low,TSH,7.4,Yes,Yes,No,7,7_DAYS
+SFU-0405,Diabetes,46-60,Moderate,HbA1c,9.0,Yes,No,Yes,0,7_DAYS
+SFU-0406,Diabetes,31-45,Moderate,HbA1c,6.3,No,No,No,4,30_DAYS
+SFU-0407,Hypertension,46-60,Moderate,Systolic BP,159,Yes,Yes,No,5,7_DAYS
+SFU-0408,Asthma,18-30,Low,PEF,413,No,No,No,7,30_DAYS
+SFU-0409,Migraine,46-60,Low,Pain Score,4,No,No,Yes,2,14_DAYS
+SFU-0410,Diabetes,18-30,Low,HbA1c,6.6,Yes,No,Yes,0,7_DAYS
+SFU-0411,Thyroid Disorder,46-60,Low,TSH,6.7,Yes,Yes,No,0,7_DAYS
+SFU-0412,Thyroid Disorder,31-45,Low,TSH,9.9,Yes,No,No,4,14_DAYS
+SFU-0413,Migraine,46-60,Low,Pain Score,8,Yes,No,Yes,3,7_DAYS
+SFU-0414,Diabetes,61-75,Low,HbA1c,7.1,Yes,No,No,4,14_DAYS
+SFU-0415,Migraine,61-75,Low,Pain Score,9,Yes,Yes,No,4,7_DAYS
+SFU-0416,Hypertension,61-75,Low,Systolic BP,174,Yes,No,No,3,14_DAYS
+SFU-0417,Hypertension,31-45,Low,Systolic BP,106,No,No,No,5,30_DAYS
+SFU-0418,Asthma,18-30,Moderate,PEF,233,Yes,No,No,4,14_DAYS
+SFU-0419,Hypertension,31-45,Low,Systolic BP,140,Yes,No,No,2,14_DAYS
+SFU-0420,Diabetes,18-30,High,HbA1c,7.7,Yes,No,No,5,7_DAYS
+SFU-0421,Diabetes,18-30,Moderate,HbA1c,7.6,Yes,No,No,0,14_DAYS
+SFU-0422,Hypertension,31-45,Low,Systolic BP,146,Yes,No,No,6,14_DAYS
+SFU-0423,Asthma,61-75,Low,PEF,259,Yes,Yes,No,1,7_DAYS
+SFU-0424,Diabetes,31-45,Low,HbA1c,10.3,Yes,No,Yes,5,7_DAYS
+SFU-0425,Hypertension,61-75,Low,Systolic BP,143,Yes,Yes,Yes,2,3_DAYS
+SFU-0426,Migraine,18-30,Low,Pain Score,5,No,No,Yes,3,14_DAYS
+SFU-0427,Thyroid Disorder,18-30,Moderate,TSH,11.4,Yes,Yes,No,0,7_DAYS
+SFU-0428,Thyroid Disorder,31-45,Low,TSH,0.3,Yes,Yes,No,1,7_DAYS
+SFU-0429,Hypertension,31-45,Low,Systolic BP,138,No,No,No,1,30_DAYS
+SFU-0430,Diabetes,18-30,High,HbA1c,5.9,No,Yes,No,2,7_DAYS
+SFU-0431,Asthma,18-30,Low,PEF,382,No,No,Yes,6,14_DAYS
+SFU-0432,Thyroid Disorder,18-30,Low,TSH,3.4,No,No,No,2,30_DAYS
+SFU-0433,Thyroid Disorder,31-45,Low,TSH,6.1,Yes,No,No,4,14_DAYS
+SFU-0434,Migraine,61-75,Low,Pain Score,10,Yes,Yes,Yes,3,3_DAYS
+SFU-0435,Migraine,31-45,Moderate,Pain Score,5,No,No,No,6,14_DAYS
+SFU-0436,Thyroid Disorder,61-75,Low,TSH,2.3,No,No,No,4,30_DAYS
+SFU-0437,Asthma,31-45,Low,PEF,451,No,No,No,7,30_DAYS
+SFU-0438,Asthma,31-45,High,PEF,453,No,Yes,No,4,7_DAYS
+SFU-0439,Diabetes,31-45,Moderate,HbA1c,6.3,No,No,No,2,30_DAYS
+SFU-0440,Migraine,46-60,Moderate,Pain Score,5,No,No,No,0,30_DAYS
+SFU-0441,Migraine,31-45,Moderate,Pain Score,8,Yes,Yes,No,7,7_DAYS
+SFU-0442,Asthma,31-45,Moderate,PEF,190,Yes,Yes,No,3,7_DAYS
+SFU-0443,Migraine,61-75,Low,Pain Score,5,No,No,No,2,30_DAYS
+SFU-0444,Hypertension,46-60,Low,Systolic BP,119,No,Yes,No,2,14_DAYS
+SFU-0445,Migraine,46-60,High,Pain Score,9,Yes,No,No,6,7_DAYS
+SFU-0446,Diabetes,46-60,Low,HbA1c,9.4,Yes,Yes,Yes,6,3_DAYS
+SFU-0447,Thyroid Disorder,46-60,Low,TSH,2.8,No,No,No,5,30_DAYS
+SFU-0448,Migraine,31-45,Low,Pain Score,0,No,No,No,2,30_DAYS
+SFU-0449,Migraine,61-75,High,Pain Score,9,Yes,No,No,2,7_DAYS
+SFU-0450,Asthma,31-45,Moderate,PEF,219,Yes,Yes,No,5,7_DAYS
+SFU-0451,Hypertension,46-60,High,Systolic BP,147,Yes,Yes,No,1,3_DAYS
+SFU-0452,Thyroid Disorder,18-30,Low,TSH,9.5,Yes,Yes,Yes,4,7_DAYS
+SFU-0453,Diabetes,18-30,Low,HbA1c,7.9,Yes,No,No,6,14_DAYS
+SFU-0454,Thyroid Disorder,46-60,Moderate,TSH,2.1,No,Yes,No,3,14_DAYS
+SFU-0455,Diabetes,18-30,Low,HbA1c,7.1,Yes,No,No,1,14_DAYS
+SFU-0456,Thyroid Disorder,31-45,Moderate,TSH,4.2,Yes,No,No,1,14_DAYS
+SFU-0457,Migraine,61-75,Moderate,Pain Score,2,No,No,No,6,14_DAYS
+SFU-0458,Diabetes,18-30,Low,HbA1c,9.1,Yes,No,No,8,14_DAYS
+SFU-0459,Migraine,46-60,Moderate,Pain Score,9,Yes,Yes,Yes,6,3_DAYS
+SFU-0460,Migraine,61-75,Low,Pain Score,10,Yes,No,No,4,14_DAYS
+SFU-0461,Migraine,61-75,Low,Pain Score,1,No,Yes,Yes,4,7_DAYS
+SFU-0462,Thyroid Disorder,18-30,Low,TSH,1.3,No,No,No,4,30_DAYS
+SFU-0463,Migraine,61-75,Low,Pain Score,0,No,No,No,7,14_DAYS
+SFU-0464,Asthma,61-75,Moderate,PEF,257,Yes,Yes,No,0,7_DAYS
+SFU-0465,Diabetes,18-30,Moderate,HbA1c,8.2,Yes,No,No,3,14_DAYS
+SFU-0466,Thyroid Disorder,61-75,High,TSH,5.8,Yes,No,No,3,7_DAYS
+SFU-0467,Diabetes,61-75,High,HbA1c,9.5,Yes,No,No,8,3_DAYS
+SFU-0468,Migraine,31-45,Low,Pain Score,3,No,No,Yes,2,14_DAYS
+SFU-0469,Hypertension,31-45,Low,Systolic BP,123,No,Yes,No,3,14_DAYS
+SFU-0470,Migraine,46-60,Low,Pain Score,6,No,No,No,1,30_DAYS
+SFU-0471,Migraine,61-75,Moderate,Pain Score,9,Yes,No,No,0,7_DAYS
+SFU-0472,Migraine,61-75,Low,Pain Score,1,No,Yes,No,1,14_DAYS
+SFU-0473,Migraine,18-30,Moderate,Pain Score,4,No,No,No,6,14_DAYS
+SFU-0474,Thyroid Disorder,61-75,Moderate,TSH,1.9,No,No,Yes,6,7_DAYS
+SFU-0475,Migraine,61-75,Low,Pain Score,0,No,No,No,3,30_DAYS
+SFU-0476,Thyroid Disorder,46-60,High,TSH,3.9,No,Yes,No,4,7_DAYS
+SFU-0477,Thyroid Disorder,18-30,High,TSH,9.3,Yes,Yes,No,7,3_DAYS
+SFU-0478,Asthma,46-60,Moderate,PEF,288,Yes,No,Yes,7,7_DAYS
+SFU-0479,Thyroid Disorder,61-75,Moderate,TSH,9.5,Yes,No,No,8,7_DAYS
+SFU-0480,Diabetes,46-60,Moderate,HbA1c,9.9,Yes,No,No,8,7_DAYS
+SFU-0481,Diabetes,31-45,Low,HbA1c,5.6,No,No,No,3,30_DAYS
+SFU-0482,Diabetes,46-60,Moderate,HbA1c,7.4,Yes,Yes,No,8,7_DAYS
+SFU-0483,Diabetes,18-30,Low,HbA1c,8.4,Yes,No,No,7,14_DAYS
+SFU-0484,Asthma,46-60,Low,PEF,325,No,No,No,1,30_DAYS
+SFU-0485,Diabetes,61-75,Low,HbA1c,9.8,Yes,No,No,3,14_DAYS
+SFU-0486,Hypertension,31-45,Low,Systolic BP,165,Yes,No,Yes,0,7_DAYS
+SFU-0487,Hypertension,31-45,Moderate,Systolic BP,140,Yes,Yes,No,4,7_DAYS
+SFU-0488,Thyroid Disorder,61-75,High,TSH,8.2,Yes,No,No,4,7_DAYS
+SFU-0489,Migraine,61-75,Moderate,Pain Score,8,Yes,Yes,No,5,3_DAYS
+SFU-0490,Migraine,46-60,Low,Pain Score,10,Yes,Yes,Yes,4,7_DAYS
+SFU-0491,Asthma,46-60,Low,PEF,276,Yes,No,No,4,14_DAYS
+SFU-0492,Hypertension,31-45,High,Systolic BP,145,Yes,No,No,6,7_DAYS
+SFU-0493,Hypertension,18-30,Moderate,Systolic BP,156,Yes,No,No,6,7_DAYS
+SFU-0494,Thyroid Disorder,18-30,Moderate,TSH,8.8,Yes,No,No,5,7_DAYS
+SFU-0495,Hypertension,61-75,High,Systolic BP,128,No,No,No,2,7_DAYS
+SFU-0496,Asthma,18-30,Moderate,PEF,273,Yes,No,No,8,7_DAYS
+SFU-0497,Asthma,18-30,Low,PEF,349,No,Yes,No,6,14_DAYS
+SFU-0498,Asthma,46-60,Moderate,PEF,478,No,No,Yes,0,14_DAYS
+SFU-0499,Migraine,18-30,Moderate,Pain Score,8,Yes,Yes,Yes,6,3_DAYS
+SFU-0500,Asthma,61-75,Low,PEF,355,No,No,Yes,3,14_DAYS

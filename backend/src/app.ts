@@ -9,6 +9,7 @@ import notificationRoutes from './routes/notification.routes.js';
 import reportRoutes from './routes/report.routes.js';
 import queueRoutes from './routes/queue.routes.js';
 import retentionRoutes from './routes/retention.routes.js';
+import aiRoutes from './routes/ai.routes.js';
 import { hospitalAdminRouter, hospitalPublicRouter, hospitalStaffRouter } from './routes/hospital.routes.js';
 
 const app: Application = express();
@@ -81,7 +82,9 @@ app.use('/api/receptionist', receptionistRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/reports', reportRoutes);
 app.use('/api/queues', queueRoutes);
+app.use('/api/queue', queueRoutes);
 app.use('/api/retention', retentionRoutes);
+app.use('/api/ai', aiRoutes);
 
 app.get('/', (req, res) => {
   res.status(200).json({ message: 'Express server is running!' });

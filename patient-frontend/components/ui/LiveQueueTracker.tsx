@@ -9,7 +9,9 @@ interface LiveQueueTrackerProps {
   arriveByTime?: string;
 }
 
-export function LiveQueueTracker({ tokens = [], userToken, arriveByTime = "10:15 AM" }: LiveQueueTrackerProps) {
+export function LiveQueueTracker({ tokens = [], userToken, arriveByTime }: LiveQueueTrackerProps) {
+  const defaultTime = new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', hour12: true });
+  const displayArriveBy = arriveByTime || defaultTime;
   // If userToken is not explicitly passed, infer from tokens if available
   const allTokens = tokens.length > 0 ? tokens : (userToken ? [userToken] : ["T-101"]);
   const userIdx = userToken ? allTokens.indexOf(userToken) : allTokens.length - 1;
@@ -29,7 +31,7 @@ export function LiveQueueTracker({ tokens = [], userToken, arriveByTime = "10:15
         </div>
         <div className="bg-teal-50 dark:bg-emerald-900/30 border border-teal-100 dark:border-emerald-700/30 rounded-xl px-3 py-1.5 flex flex-col items-center shadow-sm">
           <span className="text-[10px] text-teal-600 dark:text-emerald-400 font-bold uppercase tracking-wider mb-0.5">Arrive By</span>
-          <span className="text-sm font-bold text-teal-900 dark:text-emerald-200 leading-none">{arriveByTime}</span>
+          <span className="text-sm font-bold text-teal-900 dark:text-emerald-200 leading-none">{displayArriveBy}</span>
         </div>
       </div>
 

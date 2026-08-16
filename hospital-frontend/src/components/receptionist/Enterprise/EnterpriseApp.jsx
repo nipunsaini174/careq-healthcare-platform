@@ -9,6 +9,7 @@ import EnterpriseDoctorsView from './EnterpriseDoctorsView';
 import EnterpriseLiveQueueView from './EnterpriseLiveQueueView';
 import EnterpriseAppointmentsView from './EnterpriseAppointmentsView';
 import EnterprisePatientsView from './EnterprisePatientsView';
+import EnterpriseCareContinuityView from './EnterpriseCareContinuityView';
 import EnterpriseTokenTrackingView from './EnterpriseTokenTrackingView';
 import EnterpriseReportsView from './EnterpriseReportsView';
 import EnterpriseNotificationsView from './EnterpriseNotificationsView';
@@ -30,6 +31,7 @@ export default function EnterpriseApp() {
         {activeTab === 'live-queue' && <EnterpriseLiveQueueView />}
         {activeTab === 'appointments' && <EnterpriseAppointmentsView />}
         {activeTab === 'patients' && <EnterprisePatientsView />}
+        {activeTab === 'care-continuity' && <EnterpriseCareContinuityView />}
         {activeTab === 'tracking' && <EnterpriseTokenTrackingView />}
         {activeTab === 'reports' && <EnterpriseReportsView />}
         {activeTab === 'notifications' && <EnterpriseNotificationsView />}

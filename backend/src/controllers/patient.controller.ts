@@ -273,6 +273,33 @@ export class PatientController {
         }
 
 
+        const now = new Date();
+        const STANDARD_SLOT_MINS = 15;
+        const formatTime = (d: Date) => d.toLocaleTimeString('en-US', {
+          hour: 'numeric',
+          minute: '2-digit',
+          hour12: true,
+        });
+
+        const isToday = new Date(a.appointment_date).toDateString() === now.toDateString();
+        const isLiveActive = isToday || ['waiting', 'scheduled', 'in progress', 'in_progress', 'upcoming', 'active'].includes(normApptStatus) || ['waiting', 'scheduled', 'in_progress'].includes(normTokStatus);
+
+        let liveArriveBy = formatTime(new Date(a.appointment_date));
+        let liveSlotWindow = `${formatTime(new Date(a.appointment_date))} - ${formatTime(new Date(new Date(a.appointment_date).getTime() + 15 * 60000))}`;
+
+        if (isLiveActive && effectiveStatus !== 'Completed' && effectiveStatus !== 'Cancelled') {
+          if (queuePosition <= 1) {
+            liveArriveBy = formatTime(now);
+            liveSlotWindow = `${formatTime(now)} - ${formatTime(new Date(now.getTime() + STANDARD_SLOT_MINS * 60000))}`;
+          } else {
+            const waitMs = (queuePosition - 1) * STANDARD_SLOT_MINS * 60 * 1000;
+            const targetStart = new Date(now.getTime() + waitMs);
+            const targetEnd = new Date(targetStart.getTime() + STANDARD_SLOT_MINS * 60 * 1000);
+            liveArriveBy = formatTime(targetStart);
+            liveSlotWindow = `${formatTime(targetStart)} - ${formatTime(targetEnd)}`;
+          }
+        }
+
         return {
           id: `APT-${a.appointment_id.toString()}`,
           appointment_id: a.appointment_id.toString(),
@@ -284,11 +311,8 @@ export class PatientController {
             day: 'numeric',
             year: 'numeric',
           }),
-          time: a.appointment_date.toLocaleTimeString('en-US', {
-            hour: 'numeric',
-            minute: '2-digit',
-            hour12: true,
-          }),
+          time: liveArriveBy,
+          slotWindow: liveSlotWindow,
           appointment_date: a.appointment_date.toISOString(),
           isoDate: a.appointment_date.toISOString(),
           status: effectiveStatus,
@@ -308,6 +332,16 @@ export class PatientController {
             estimated_wait_time: estimatedWaitTime,
           },
           liveQueueTokens: liveQueueTokens.length > 0 ? liveQueueTokens : [tokenCode],
+          chief_complaint: (a as any).chief_complaint || null,
+          symptoms: (a as any).symptoms || null,
+          symptoms_duration: (a as any).symptoms_duration || null,
+          severity: (a as any).severity || null,
+          is_first_visit: (a as any).is_first_visit ?? true,
+          days_since_last_visit: (a as any).days_since_last_visit ?? null,
+          current_medications: (a as any).current_medications || null,
+          medical_history: (a as any).medical_history || null,
+          allergies: (a as any).allergies || null,
+          intake_notes: (a as any).intake_notes || null,
         };
       });
 
@@ -400,10 +434,36 @@ export class PatientController {
         return res.status(401).json({ error: 'Unauthorized' });
       }
 
-      const { doctorId, bookingType, patientName } = req.body as {
+      const {
+        doctorId,
+        bookingType,
+        patientName,
+        chief_complaint,
+        symptoms,
+        symptoms_duration,
+        severity,
+        is_first_visit,
+        days_since_last_visit,
+        last_visit_date,
+        current_medications,
+        medical_history,
+        allergies,
+        intake_notes,
+      } = req.body as {
         doctorId?: string | number;
         bookingType?: 'self' | 'other';
         patientName?: string;
+        chief_complaint?: string;
+        symptoms?: string;
+        symptoms_duration?: string;
+        severity?: string;
+        is_first_visit?: boolean;
+        days_since_last_visit?: number;
+        last_visit_date?: string;
+        current_medications?: string;
+        medical_history?: string;
+        allergies?: string;
+        intake_notes?: string;
       };
 
       const patient = await prisma.patients.findFirst({
@@ -512,7 +572,7 @@ export class PatientController {
       const waitTime = existingActive * 15; // 0 mins for first patient, +15m for subsequent patients
 
       const [newAppointment, newToken] = await prisma.$transaction(async (tx) => {
-        const appt = await tx.appointments.create({
+        const appt = await (tx.appointments as any).create({
           data: {
             patient_id: targetPatient.patient_id,
             doctor_id: doctor.doctor_id,
@@ -520,6 +580,17 @@ export class PatientController {
             appointment_date: appointmentDate,
             appointment_type: apptType,
             appointment_status: 'Upcoming',
+            chief_complaint: chief_complaint || null,
+            symptoms: symptoms || null,
+            symptoms_duration: symptoms_duration || null,
+            severity: severity || null,
+            is_first_visit: is_first_visit !== undefined ? Boolean(is_first_visit) : true,
+            days_since_last_visit: days_since_last_visit !== undefined && days_since_last_visit !== null ? Number(days_since_last_visit) : null,
+            last_visit_date: last_visit_date ? new Date(last_visit_date) : null,
+            current_medications: current_medications || null,
+            medical_history: medical_history || null,
+            allergies: allergies || null,
+            intake_notes: intake_notes || null,
           },
         });
 
@@ -541,6 +612,14 @@ export class PatientController {
 
         return [appt, tok];
       });
+
+      // Assign primary doctor to patient if not set
+      if (!targetPatient.primary_doctor_id && doctor.doctor_id) {
+        await prisma.patients.update({
+          where: { patient_id: targetPatient.patient_id },
+          data: { primary_doctor_id: doctor.doctor_id },
+        }).catch(() => {});
+      }
 
       const tokenCode = `T${newAppointment.appointment_id.toString()}`;
       const timeFormatted = appointmentDate.toLocaleTimeString('en-US', {
@@ -569,6 +648,13 @@ export class PatientController {
       // refresh. `safeEmit` swallows transport errors so a failed
       // emit never breaks the booking response to the patient.
       safeEmit('appointment_created', eventPayload);
+      safeEmit('patient_updated', {
+        id: targetPatient.uhid,
+        patientId: targetPatient.patient_id.toString(),
+        name: targetPatient.full_name,
+        doctor: doctor.users?.full_name ? `Dr. ${doctor.users.full_name.replace(/^Dr\.\s*/i, '')}` : 'Doctor',
+        status: targetPatient.patient_status || 'Active',
+      });
       safeEmit('queue_updated', {
         hospitalId: eventPayload.hospitalId,
         reason: 'token_created',
@@ -590,6 +676,16 @@ export class PatientController {
         queuePosition: queuePosition,
         estimatedWaitTime: waitTime,
         tokenCode: tokenCode,
+        chief_complaint: (newAppointment as any).chief_complaint || null,
+        symptoms: (newAppointment as any).symptoms || null,
+        symptoms_duration: (newAppointment as any).symptoms_duration || null,
+        severity: (newAppointment as any).severity || null,
+        is_first_visit: (newAppointment as any).is_first_visit ?? true,
+        days_since_last_visit: (newAppointment as any).days_since_last_visit ?? null,
+        current_medications: (newAppointment as any).current_medications || null,
+        medical_history: (newAppointment as any).medical_history || null,
+        allergies: (newAppointment as any).allergies || null,
+        intake_notes: (newAppointment as any).intake_notes || null,
         token: {
           tokenId: `T${newAppointment.appointment_id.toString()}`,
           token_id: newToken.token_id.toString(),

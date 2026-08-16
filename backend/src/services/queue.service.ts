@@ -14,7 +14,7 @@ export class QueueService {
     try {
       const whereClause: any = {
         hospital_id: hospitalId,
-        token_status: { in: ['WAITING', 'IN_PROGRESS', 'SERVING'] },
+        token_status: { in: ['WAITING', 'Waiting', 'IN_PROGRESS', 'In Progress', 'SERVING', 'Serving', 'Scheduled', 'SCHEDULED', 'CHECKED_IN', 'Checked In', 'Active', 'ACTIVE'] },
       };
       if (doctorId) whereClause.doctor_id = doctorId;
 
@@ -31,45 +31,148 @@ export class QueueService {
         ],
       });
 
-      const serving = tokens.find((t) => t.token_status === 'IN_PROGRESS' || t.token_status === 'SERVING');
-      const waiting = tokens.filter((t) => t.token_status === 'WAITING');
+      // Also get completed tokens for this doctor today
+      const todayStart = new Date();
+      todayStart.setHours(0, 0, 0, 0);
 
-      const mappedWaiting = waiting.map((t, idx) => ({
-        tokenId: String(t.token_id),
-        tokenCode: t.token_code,
-        tokenType: t.token_type,
-        priorityScore: t.priority_score,
-        queuePosition: idx + 1,
-        patientName: t.patients?.full_name || 'Patient',
-        patientPhone: t.patients?.phone || 'N/A',
-        estimatedWaitTime: (idx + 1) * 10,
-        checkInTime: t.check_in_time.toISOString(),
-      }));
+      const completedWhereClause: any = {
+        hospital_id: hospitalId,
+        token_status: { in: ['COMPLETED', 'Completed', 'Done'] },
+      };
+      if (doctorId) completedWhereClause.doctor_id = doctorId;
+
+      const completedTokens = await prisma.queue_tokens.findMany({
+        where: completedWhereClause,
+        include: {
+          patients: true,
+          appointments: true,
+        },
+        orderBy: { check_in_time: 'desc' },
+        take: 50,
+      });
+
+      const serving = tokens.find((t) => ['IN_PROGRESS', 'In Progress', 'SERVING', 'Serving'].includes(t.token_status));
+      const waiting = tokens.filter((t) => !['IN_PROGRESS', 'In Progress', 'SERVING', 'Serving', 'COMPLETED', 'Completed', 'Cancelled'].includes(t.token_status));
+
+      const now = new Date();
+      const STANDARD_SLOT_MINS = 15;
+
+      const formatTime = (d: Date) => d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+
+      const currentServingStartTime = serving?.check_in_time ? new Date(serving.check_in_time) : now;
+      const elapsedMins = serving ? Math.max(0, Math.floor((now.getTime() - currentServingStartTime.getTime()) / 60000)) : 0;
+      const remainingServingMins = serving ? Math.max(0, STANDARD_SLOT_MINS - elapsedMins) : 0;
+
+      let runningTimeMs = now.getTime() + (remainingServingMins * 60000);
+
+      const mapTokenToPatientData = (t: any, idx?: number) => {
+        const estSlotStart = new Date(runningTimeMs);
+        const estSlotEnd = new Date(runningTimeMs + (STANDARD_SLOT_MINS * 60000));
+        const waitMins = Math.max(0, Math.round((runningTimeMs - now.getTime()) / 60000));
+
+        if (idx !== undefined) {
+          runningTimeMs += (STANDARD_SLOT_MINS * 60000);
+        }
+
+        const isEmergency = t.priority_score >= 100 || t.token_type === 'EMERGENCY';
+        const isSenior = t.priority_score >= 70 || t.token_type === 'SENIOR_CITIZEN';
+
+        return {
+          tokenId: String(t.token_id),
+          tokenCode: t.token_code,
+          tokenType: t.token_type,
+          priorityScore: t.priority_score,
+          queuePosition: idx !== undefined ? idx + 1 : 1,
+          patientId: String(t.patient_id || ''),
+          uhid: t.patients?.uhid || `UHID-${t.patient_id}`,
+          patientName: t.patients?.full_name || 'Patient',
+          patientPhone: t.patients?.phone || 'N/A',
+          patientEmail: t.patients?.email || 'N/A',
+          age: t.patients?.age ? Number(t.patients.age) : 35,
+          gender: t.patients?.gender || 'Not Specified',
+          bloodGroup: t.patients?.blood_group || 'O+',
+          appointmentId: t.appointment_id ? `APT-${t.appointment_id}` : undefined,
+          visitType: t.appointments?.appointment_type || (t.token_type === 'OPD' ? 'OPD Consultation' : t.token_type || 'General'),
+          status: t.token_status,
+          priority: isEmergency ? 'HIGH' : isSenior ? 'MEDIUM' : 'LOW',
+          estimatedWaitTime: waitMins,
+          scheduledStartTime: formatTime(estSlotStart),
+          scheduledEndTime: formatTime(estSlotEnd),
+          slotWindow: `${formatTime(estSlotStart)} - ${formatTime(estSlotEnd)}`,
+          checkInTime: t.check_in_time.toISOString(),
+
+          // Clinical Intake & Pre-Consultation Fields
+          chiefComplaint: (t.appointments as any)?.chief_complaint || 'General Checkup & Consultation',
+          symptoms: (t.appointments as any)?.symptoms || (t.appointments as any)?.chief_complaint || 'General symptoms',
+          symptomsDuration: (t.appointments as any)?.symptoms_duration || '3-7 days',
+          severity: (t.appointments as any)?.severity || 'Moderate',
+          isFirstVisit: (t.appointments as any)?.is_first_visit ?? true,
+          daysSinceLastVisit: (t.appointments as any)?.days_since_last_visit ?? null,
+          medications: (t.appointments as any)?.current_medications || 'None reported',
+          medicalHistory: (t.appointments as any)?.medical_history || 'No chronic history',
+          allergies: (t.appointments as any)?.allergies || 'No known allergies',
+          intakeNotes: (t.appointments as any)?.intake_notes || '',
+        };
+      };
+
+      const mappedWaiting = waiting.map((t, idx) => mapTokenToPatientData(t, idx));
 
       const currentServingData = serving
         ? {
-            tokenId: String(serving.token_id),
-            tokenCode: serving.token_code,
-            patientName: serving.patients?.full_name || 'Patient',
-            status: serving.token_status,
+            ...mapTokenToPatientData(serving),
+            status: 'IN_CONSULTATION',
+            startTime: formatTime(currentServingStartTime),
+            elapsedMinutes: elapsedMins,
+            remainingMinutes: remainingServingMins,
+            expectedCheckoutTime: formatTime(new Date(currentServingStartTime.getTime() + STANDARD_SLOT_MINS * 60000)),
           }
         : null;
+
+      const completedList = completedTokens.map(c => ({
+        tokenId: String(c.token_id),
+        tokenCode: c.token_code,
+        patientId: String(c.patient_id),
+        uhid: c.patients?.uhid || `UHID-${c.patient_id}`,
+        patientName: c.patients?.full_name || 'Patient',
+        patientPhone: c.patients?.phone || 'N/A',
+        age: c.patients?.age ? Number(c.patients.age) : 35,
+        gender: c.patients?.gender || 'Not Specified',
+        bloodGroup: c.patients?.blood_group || 'O+',
+        visitType: c.appointments?.appointment_type || 'General Consultation',
+        status: 'COMPLETED',
+        completedAt: formatTime(new Date(c.check_in_time)),
+        chiefComplaint: (c.appointments as any)?.chief_complaint || 'Completed Consultation',
+      }));
+
+      const lastWaiting = mappedWaiting.length > 0 ? mappedWaiting[mappedWaiting.length - 1] : undefined;
+      const totalWaitMins = lastWaiting ? lastWaiting.estimatedWaitTime + STANDARD_SLOT_MINS : 0;
+      const totalPatientsToday = waiting.length + (serving ? 1 : 0) + completedTokens.length;
 
       return {
         currentServing: currentServingData,
         waitingQueue: mappedWaiting,
+        completedPatients: completedList,
         totalWaiting: waiting.length,
         totalServing: serving ? 1 : 0,
-        estimatedWaitMinutes: waiting.length * 15,
+        totalCompleted: completedTokens.length,
+        totalPatientsToday,
+        estimatedWaitMinutes: totalWaitMins,
+        standardConsultationMins: STANDARD_SLOT_MINS,
+        currentTimeFormatted: formatTime(now),
       };
     } catch (err) {
       console.warn("DB query failed in getQueueForDoctor, returning zero-baseline queue state:", err);
       return {
         currentServing: null,
         waitingQueue: [],
+        completedPatients: [],
         totalWaiting: 0,
         totalServing: 0,
+        totalCompleted: 0,
+        totalPatientsToday: 0,
         estimatedWaitMinutes: 0,
+        standardConsultationMins: 15,
+        currentTimeFormatted: new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }),
       };
     }
   }
@@ -147,12 +250,12 @@ export class QueueService {
 
   async callNextPatient(hospitalId: number, doctorId: number) {
     try {
-      // Find highest priority WAITING token
+      // Find highest priority WAITING / Scheduled token
       const nextToken = await prisma.queue_tokens.findFirst({
         where: {
           hospital_id: hospitalId,
           doctor_id: doctorId,
-          token_status: 'WAITING',
+          token_status: { in: ['WAITING', 'Waiting', 'Scheduled', 'SCHEDULED', 'CHECKED_IN', 'Checked In', 'Active', 'ACTIVE'] },
         },
         orderBy: [
           { priority_score: 'desc' },
@@ -212,14 +315,38 @@ export class QueueService {
         }).catch((err) => console.warn('Could not mark appointment completed by patient/doc:', err));
       }
 
-      safeEmit('consultation_completed', { tokenId, appointmentId: updated.appointment_id ? String(updated.appointment_id) : undefined });
+      const checkInTime = updated.check_in_time ? new Date(updated.check_in_time) : new Date();
+      const actualDurationMins = Math.max(1, Math.round((Date.now() - checkInTime.getTime()) / 60000));
+      const deltaMins = 15 - actualDurationMins;
+
+      safeEmit('consultation_completed', { 
+        tokenId, 
+        appointmentId: updated.appointment_id ? String(updated.appointment_id) : undefined,
+        actualDurationMins,
+        deltaMins,
+        message: deltaMins > 0 
+          ? `Early checkout (${actualDurationMins}m): advanced upcoming patients by ${deltaMins} mins!`
+          : deltaMins < 0 
+          ? `Consultation extended (${actualDurationMins}m): adjusted upcoming schedule by ${Math.abs(deltaMins)} mins.`
+          : 'Consultation completed on standard 15-min schedule.'
+      });
       safeEmit('appointment_updated', {
         appointmentId: updated.appointment_id ? String(updated.appointment_id) : undefined,
         status: 'Completed'
       });
+      safeEmit('schedule_cascaded', {
+        hospitalId: String(updated.hospital_id),
+        doctorId: String(updated.doctor_id),
+        deltaMins,
+      });
       safeEmit('queue_updated', { hospitalId: String(updated.hospital_id), doctorId: String(updated.doctor_id) });
 
-      return { success: true, message: 'Consultation marked as completed' };
+      return { 
+        success: true, 
+        message: 'Consultation marked as completed',
+        actualDurationMins,
+        deltaMins,
+      };
     } catch (err) {
       console.warn("DB completeConsultation failed:", err);
       safeEmit('consultation_completed', { tokenId });

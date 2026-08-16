@@ -23,7 +23,9 @@ export function LiveQueueTracker({ currentToken = 40, userToken = 53 }: LiveQueu
         </div>
         <div className="bg-teal-50 dark:bg-emerald-900/30 border border-teal-100 dark:border-emerald-700/30 rounded-xl px-3 py-1.5 flex flex-col items-center shadow-sm">
           <span className="text-[10px] text-teal-600 dark:text-emerald-400 font-bold uppercase tracking-wider mb-0.5">Arrive By</span>
-          <span className="text-sm font-bold text-teal-900 dark:text-emerald-200 leading-none">10:15 AM</span>
+          <span className="text-sm font-bold text-teal-900 dark:text-emerald-200 leading-none">
+            {new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', hour12: true })}
+          </span>
         </div>
       </div>
 

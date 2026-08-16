@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { PlayCircle, Clock, CheckCircle2, Siren, FileText, AlertCircle, TrendingUp, X, UserX, UserCheck, RotateCcw } from 'lucide-react';
 import { useQueue } from '@/hooks/useQueue';
 
@@ -10,24 +10,46 @@ export default function CommandCenter() {
   const [currentToken, setCurrentToken] = useState('Waiting...');
   const [activeTokenData, setActiveTokenData] = useState(null);
   const [nextTokens, setNextTokens] = useState([]);
+  const [elapsedSeconds, setElapsedSeconds] = useState(252); // Starts at 04:12 initial default or counts up
   
   useEffect(() => {
     if (queue && queue.length > 0) {
       const active = queue.find(q => q.status === 'IN_CONSULTATION');
-      const nextWaiters = queue.filter(q => q.status === 'WAITING');
+      const nextWaiters = queue.filter(q => q.status === 'WAITING' || q.status === 'Scheduled');
       
       const current = active || nextWaiters[0] || null;
       
       setCurrentToken(current ? current.tokenNumber : 'Empty');
       setActiveTokenData(current);
       
-      setNextTokens(nextWaiters.map(q => q.tokenNumber).slice(active ? 0 : 1, 6)); // show next 5
+      // Upcoming tokens after the current one
+      const upcoming = active ? nextWaiters : nextWaiters.slice(1);
+      setNextTokens(upcoming.map(q => q.tokenNumber));
     } else {
       setCurrentToken('Empty');
       setActiveTokenData(null);
       setNextTokens([]);
     }
   }, [queue]);
+
+  // Live timer for elapsed consultation/wait time
+  useEffect(() => {
+    if (currentToken === 'Empty') return;
+    const timer = setInterval(() => {
+      setElapsedSeconds(prev => prev + 1);
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [currentToken]);
+
+  const formattedElapsed = useMemo(() => {
+    const mins = Math.floor(elapsedSeconds / 60);
+    const secs = elapsedSeconds % 60;
+    return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')} Elapsed`;
+  }, [elapsedSeconds]);
+
+  // Dynamic calculations for Waiting Patients and Estimated Wait Time
+  const waitingPatientsCount = nextTokens.length;
+  const estimatedWaitMins = waitingPatientsCount === 0 ? 0 : waitingPatientsCount * 15;
 
   // Patient Journey State
   // Stages: 0 = Waiting, 1 = Check-In, 2 = Consultation, 3 = Billing, 4 = Check-Out
@@ -57,6 +79,7 @@ export default function CommandCenter() {
   const handleCheckIn = () => {
     setVisitStage(1); // Checked In -> Consultation
     setVisitStartTime(new Date());
+    setElapsedSeconds(0);
   };
 
   const handleMarkAbsent = () => {
@@ -75,9 +98,6 @@ export default function CommandCenter() {
     
     // Update metrics
     setAttendanceMetrics(prev => ({ ...prev, absent: prev.absent + 1 }));
-
-    // Simulate Notification
-    console.log(`Notification Sent: Your token ${currentToken} was called, but you were marked absent.`);
 
     // Advance Queue immediately
     advanceQueue();
@@ -143,6 +163,7 @@ export default function CommandCenter() {
       const next = nextTokens[0];
       setCurrentToken(next);
       setNextTokens(nextTokens.slice(1));
+      setElapsedSeconds(0);
       
       setVisitStage(0);
       setVisitStartTime(null);
@@ -169,7 +190,7 @@ export default function CommandCenter() {
     setEmergencyName('');
   };
 
-  const attendanceRate = Math.round((attendanceMetrics.present / (attendanceMetrics.present + attendanceMetrics.absent)) * 100) || 100;
+  const attendanceRate = Math.round((attendanceMetrics.present / Math.max(1, attendanceMetrics.present + attendanceMetrics.absent)) * 100) || 100;
 
   return (
     <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden flex flex-col h-full relative">
@@ -251,14 +272,14 @@ export default function CommandCenter() {
             <div className="relative z-10 flex items-center gap-3 text-xs font-semibold">
               <div className="flex items-center gap-1.5 bg-white/10 backdrop-blur-md px-3 py-1.5 rounded-xl border border-white/20 shadow-[0_4px_12px_rgba(0,0,0,0.05)]">
                 <Clock size={14} className="text-white/90" />
-                <span>04:12 Elapsed</span>
+                <span>{formattedElapsed}</span>
               </div>
               <div className="flex items-center gap-1.5 bg-white/10 backdrop-blur-md px-3 py-1.5 rounded-xl border border-white/20 shadow-[0_4px_12px_rgba(0,0,0,0.05)]">
                 <CheckCircle2 size={14} className="text-white/90" />
-                <span>{activeTokenData?.doctorName || 'Assigned Doctor'}</span>
+                <span>{activeTokenData?.doctorName || 'Dr. Partik Nain'}</span>
               </div>
               <div className="flex items-center gap-1.5 bg-white/10 backdrop-blur-md px-3 py-1.5 rounded-xl border border-white/20 shadow-[0_4px_12px_rgba(0,0,0,0.05)]">
-                <span className="text-white/90">{activeTokenData?.department || 'Department'}</span>
+                <span className="text-white/90">{activeTokenData?.department || 'Cardiology'}</span>
               </div>
             </div>
           </div>
@@ -290,11 +311,11 @@ export default function CommandCenter() {
             <div className="grid grid-cols-2 gap-4">
               <div className="bg-white border border-gray-200 rounded-xl p-3 shadow-sm">
                 <p className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">Waiting Patients</p>
-                <p className="text-xl font-black text-gray-900">{nextTokens.length + 15}</p>
+                <p className="text-xl font-black text-gray-900">{waitingPatientsCount}</p>
               </div>
               <div className="bg-white border border-gray-200 rounded-xl p-3 shadow-sm">
                 <p className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">Est. Wait Time</p>
-                <p className="text-xl font-black text-gray-900">18 <span className="text-xs font-bold text-gray-500">mins</span></p>
+                <p className="text-xl font-black text-gray-900">{estimatedWaitMins} <span className="text-xs font-bold text-gray-500">mins</span></p>
               </div>
             </div>
           </div>
@@ -411,8 +432,6 @@ export default function CommandCenter() {
           </div>
         </div>
 
-
-
         {/* Bottom Section: Absent & Upcoming Tokens Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Upcoming Tokens */}
@@ -450,95 +469,76 @@ export default function CommandCenter() {
                       <p className="text-[9px] text-gray-500 font-bold tracking-wider">{patient.id} <span className="opacity-50 font-normal">| Missed: {patient.time} • {patient.doctor}</span></p>
                     </div>
                   </div>
-                  {patient.recalled ? (
-                    <span className="text-[9px] font-bold text-blue-600 bg-blue-50 px-2 py-1 rounded-md flex items-center gap-1"><RotateCcw size={10}/> Recalled</span>
-                  ) : (
+                  {!patient.recalled && (
                     <button 
                       onClick={() => handleRecall(i)}
-                      className="text-[10px] font-bold text-blue-600 bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded-md border border-blue-200 transition-colors"
+                      className="flex items-center gap-1 bg-teal-50 text-teal-700 hover:bg-teal-100 border border-teal-200 px-2.5 py-1 rounded text-[10px] font-bold transition-colors"
                     >
-                      Recall Patient
+                      <RotateCcw size={10} /> Recall
                     </button>
                   )}
                 </div>
               ))}
-              {absentPatients.length === 0 && <p className="text-xs text-gray-400 font-bold italic py-4 text-center border rounded-lg bg-gray-50">No absent patients.</p>}
+              {absentPatients.length === 0 && <p className="text-xs text-gray-400 font-bold italic py-4">No absent patients logged.</p>}
             </div>
           </div>
         </div>
 
       </div>
 
-      {/* Emergency Modal Overlay */}
+      {/* Emergency Modal */}
       {isEmergencyModalOpen && (
-        <div className="absolute inset-0 bg-gray-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-6 animate-in fade-in duration-200">
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden border-2 border-red-100">
-            <div className="bg-red-600 px-6 py-4 flex justify-between items-center">
-              <h3 className="font-bold text-white flex items-center gap-2">
-                <Siren size={18} />
-                Emergency Patient
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-red-100">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="font-black text-red-600 text-lg flex items-center gap-2">
+                <Siren size={20} />
+                Generate Emergency Token
               </h3>
-              <button onClick={() => setIsEmergencyModalOpen(false)} className="text-red-100 hover:text-white">
-                <X size={20} />
+              <button 
+                onClick={() => setIsEmergencyModalOpen(false)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <X size={18} />
               </button>
             </div>
             
-            <form onSubmit={handleGenerateEmergency} className="p-6 space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">Patient Name</label>
-                  <input 
-                    type="text" 
-                    required
-                    value={emergencyName}
-                    onChange={e => setEmergencyName(e.target.value)}
-                    className="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500 font-semibold" 
-                    placeholder="e.g. John Doe"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">Patient ID</label>
-                  <input 
-                    type="text" 
-                    className="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500 font-semibold text-gray-500" 
-                    placeholder="PT-XXXX"
-                  />
-                </div>
-              </div>
-              
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">Mobile</label>
-                  <input type="tel" className="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500" placeholder="+91" />
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">Priority Level</label>
-                  <select className="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500 font-bold text-red-600">
-                    <option>Critical</option>
-                    <option>High</option>
-                  </select>
-                </div>
-              </div>
-
+            <form onSubmit={handleGenerateEmergency} className="space-y-4">
               <div>
-                <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">Emergency Type</label>
-                <select className="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500 font-semibold">
-                  <option>Cardiac Arrest</option>
-                  <option>Trauma / Accident</option>
-                  <option>Respiratory Distress</option>
-                  <option>Other</option>
-                </select>
+                <label className="block text-xs font-bold text-gray-700 uppercase mb-1">Patient Name</label>
+                <input 
+                  type="text" 
+                  required
+                  placeholder="e.g. Critical Patient"
+                  value={emergencyName}
+                  onChange={(e) => setEmergencyName(e.target.value)}
+                  className="w-full text-sm border border-gray-200 rounded-lg p-2.5 focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500"
+                />
               </div>
 
-              <div className="pt-4 mt-6 border-t border-gray-100 flex justify-end gap-3">
-                <button type="button" onClick={() => setIsEmergencyModalOpen(false)} className="px-4 py-2.5 text-sm font-bold text-gray-600 hover:bg-gray-100 rounded-lg">Cancel</button>
-                <button type="submit" className="px-6 py-2.5 text-sm font-bold bg-red-600 hover:bg-red-700 text-white rounded-lg shadow-sm">Generate Emergency Token</button>
+              <div className="bg-red-50 text-red-700 p-3 rounded-lg text-xs font-medium border border-red-200">
+                This token will bypass all current waiting patients and immediately become priority in queue.
+              </div>
+
+              <div className="flex justify-end gap-2 pt-2">
+                <button 
+                  type="button" 
+                  onClick={() => setIsEmergencyModalOpen(false)}
+                  className="px-4 py-2 border border-gray-200 text-gray-600 rounded-lg text-sm font-semibold hover:bg-gray-50"
+                >
+                  Cancel
+                </button>
+                <button 
+                  type="submit" 
+                  className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm font-bold shadow-md shadow-red-600/30"
+                >
+                  Generate E-00{emergencyCounter}
+                </button>
               </div>
             </form>
           </div>
         </div>
       )}
-
     </div>
   );
 }

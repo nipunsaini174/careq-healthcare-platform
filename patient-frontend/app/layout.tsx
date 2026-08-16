@@ -6,10 +6,10 @@ import { AppDataProvider } from "@/contexts/AppDataProvider";
 import { Toaster } from "@/components/ui/sonner";
 
 export const metadata: Metadata = {
-  title: "SUVIDHAQ — Smart Hospital Management",
+  title: "CareQ — Smart Hospital Management",
   description:
-    "Manage appointments, track queues, access lab reports, and navigate your healthcare journey with SUVIDHAQ.",
-  keywords: ["healthcare", "appointments", "queue management", "medical records", "SUVIDHAQ", "hospital management"],
+    "Manage appointments, track queues, access lab reports, and navigate your healthcare journey with CareQ.",
+  keywords: ["healthcare", "appointments", "queue management", "medical records", "CareQ", "hospital management"],
 };
 
 export const viewport: Viewport = {

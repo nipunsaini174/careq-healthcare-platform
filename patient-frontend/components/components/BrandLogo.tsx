@@ -1,6 +1,6 @@
 import { cn } from "@/lib/utils";
 
-const LOGO_SRC = "/brand/suvidhaq-logo.png";
+const LOGO_SRC = "/brand/careq-logo.svg";
 
 type BrandLogoProps = {
   className?: string;
@@ -13,9 +13,9 @@ export function BrandLogo({ className, width = 220, priority = false }: BrandLog
   return (
     <img
       src={LOGO_SRC}
-      alt="CAREQ — AI-Powered Hospital Intelligence. Better Care, Together."
+      alt="CAREQ — Smart Hospital Management. Better Care, Together."
       width={width}
-      height={Math.round(width * 0.84)}
+      height={Math.round(width * 0.6875)}
       className={cn("h-auto object-contain", className)}
       draggable={false}
       fetchPriority={priority ? "high" : undefined}
@@ -24,4 +24,5 @@ export function BrandLogo({ className, width = 220, priority = false }: BrandLog
 }
 
 export const BRAND_NAME = "CAREQ";
-export const BRAND_TAGLINE = "AI-Powered Hospital Intelligence. Better Care, Together.";
+export const BRAND_TAGLINE = "Smart Hospital Management, Better Care, Together.";
+

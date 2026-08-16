@@ -33,11 +33,29 @@ export interface ManagedPerson {
 let _currentUserId: string | null = null;
 
 function peopleKey(): string | null {
-  return _currentUserId ? `suvidhaq-people-${_currentUserId}` : null;
+  if (!_currentUserId) return null;
+  // Migrate legacy suvidhaq key if present
+  if (isBrowser()) {
+    const legacy = localStorage.getItem(`suvidhaq-people-${_currentUserId}`);
+    const current = localStorage.getItem(`careq-people-${_currentUserId}`);
+    if (legacy && !current) {
+      localStorage.setItem(`careq-people-${_currentUserId}`, legacy);
+    }
+  }
+  return `careq-people-${_currentUserId}`;
 }
 
 function relationshipsKey(): string | null {
-  return _currentUserId ? `suvidhaq-relationships-${_currentUserId}` : null;
+  if (!_currentUserId) return null;
+  // Migrate legacy suvidhaq key if present
+  if (isBrowser()) {
+    const legacy = localStorage.getItem(`suvidhaq-relationships-${_currentUserId}`);
+    const current = localStorage.getItem(`careq-relationships-${_currentUserId}`);
+    if (legacy && !current) {
+      localStorage.setItem(`careq-relationships-${_currentUserId}`, legacy);
+    }
+  }
+  return `careq-relationships-${_currentUserId}`;
 }
 
 /**

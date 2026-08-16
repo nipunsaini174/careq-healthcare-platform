@@ -307,7 +307,7 @@ export default function Home() {
           >
             <div className="text-4xl mb-2" aria-hidden>👋</div>
             <h2 className="text-xl font-extrabold text-slate-900 dark:text-white tracking-tight mb-1 drop-shadow-sm">
-              Welcome to SUVIDHAQ
+              Welcome to CareQ
             </h2>
             <p className="text-slate-900/80 dark:text-emerald-100/80 text-sm font-medium mb-5 max-w-xs">
               Skip the wait. See your doctor on time.
@@ -482,7 +482,7 @@ export default function Home() {
                 <>
                   <div className="text-5xl mb-3 relative z-10" aria-hidden>👋</div>
                   <h2 className="text-3xl font-extrabold tracking-tight mb-2 drop-shadow-sm relative z-10">
-                    Welcome to SUVIDHAQ
+                    Welcome to CareQ
                   </h2>
                   <p className="text-teal-50 dark:text-emerald-100 text-sm font-medium opacity-90 mb-8 max-w-md relative z-10">
                     Skip the wait. See your doctor on time.
@@ -600,10 +600,10 @@ export default function Home() {
               transition={{ delay: 0.15 }}
               className={`${isMobileView ? 'col-span-2' : 'col-span-12'}`}
             >
-              {/* --- How SUVIDHAQ works (3-step visual) --- */}
+              {/* --- How CareQ works (3-step visual) --- */}
               <div className="flex items-center gap-2 mb-3 px-0.5">
                 <Sparkles className="w-4 h-4 text-teal-600 dark:text-emerald-400" />
-                <h3 className="text-sm font-bold text-gray-900 dark:text-white tracking-tight">How SUVIDHAQ works</h3>
+                <h3 className="text-sm font-bold text-gray-900 dark:text-white tracking-tight">How CareQ works</h3>
               </div>
 
               <div className="grid grid-cols-3 gap-2.5 mb-6">
@@ -640,9 +640,9 @@ export default function Home() {
                 })}
               </div>
 
-              {/* --- Explore SUVIDHAQ (discovery strip) --- */}
+              {/* --- Explore CareQ (discovery strip) --- */}
               <div className="flex items-center gap-2 mb-3 px-0.5">
-                <h3 className="text-sm font-bold text-gray-900 dark:text-white tracking-tight">Explore SUVIDHAQ</h3>
+                <h3 className="text-sm font-bold text-gray-900 dark:text-white tracking-tight">Explore CareQ</h3>
               </div>
 
               <div className="flex flex-col gap-2.5 mb-6">

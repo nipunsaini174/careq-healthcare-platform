@@ -76,6 +76,51 @@ export class RetentionController {
       res.status(500).json({ success: false, error: error.message });
     }
   }
+
+  /**
+   * AI-Powered Follow-up Intelligence list trained on 500 patient records
+   * GET /api/retention/followup-intelligence
+   */
+  async getFollowupIntelligence(req: Request, res: Response) {
+    try {
+      const hospitalId = await resolveHospitalIdForUser(req);
+      const { aiFollowupService } = await import('../services/aiFollowup.service.js');
+      const data = await aiFollowupService.getFollowupIntelligenceList(hospitalId);
+      res.status(200).json({ success: true, data });
+    } catch (error: any) {
+      res.status(500).json({ success: false, error: error.message });
+    }
+  }
+
+  /**
+   * Live follow-up prediction for any clinical parameters
+   * POST /api/retention/predict-followup
+   */
+  async predictFollowup(req: Request, res: Response) {
+    try {
+      const { aiFollowupService } = await import('../services/aiFollowup.service.js');
+      const prediction = aiFollowupService.predictFollowup(req.body);
+      res.status(200).json({ success: true, data: prediction });
+    } catch (error: any) {
+      res.status(500).json({ success: false, error: error.message });
+    }
+  }
+
+  /**
+   * Action Follow-up: Receptionist logs call / scheduling outreach
+   * POST /api/retention/action-followup
+   */
+  async actionFollowup(req: Request, res: Response) {
+    try {
+      const { patientId, actionType, notes } = req.body;
+      const { aiFollowupService } = await import('../services/aiFollowup.service.js');
+      const result = await aiFollowupService.actionFollowup(Number(patientId), actionType, notes);
+      res.status(200).json({ success: true, data: result });
+    } catch (error: any) {
+      res.status(500).json({ success: false, error: error.message });
+    }
+  }
 }
 
 export const retentionController = new RetentionController();
+

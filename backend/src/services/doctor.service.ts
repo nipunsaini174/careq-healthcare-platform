@@ -21,16 +21,24 @@ function mapDoctorRow(doc: any) {
   const activeTokens = doc.queue_tokens?.filter((t: any) => ['Scheduled', 'Waiting', 'IN_PROGRESS'].includes(t.token_status)) || [];
   const queueLength = activeTokens.length;
 
-  // Generate next 8 available slots in 15-minute intervals
-  const baseSlotDate = new Date();
-  baseSlotDate.setDate(baseSlotDate.getDate() + 1);
-  baseSlotDate.setHours(10, 30, 0, 0);
+  // Generate next 8 available slots in 15-minute intervals starting from live real-time clock
+  const now = new Date();
+  const STANDARD_SLOT_MINS = 15;
+  let runningSlotMs = now.getTime();
 
-  const bookedCount = doc.appointments?.filter((a: any) => a.appointment_status !== 'Cancelled').length || 0;
+  if (currentConsultation) {
+    const checkIn = currentConsultation.start_time ? new Date(currentConsultation.start_time) : now;
+    const elapsed = Math.max(0, Math.floor((now.getTime() - checkIn.getTime()) / 60000));
+    const remaining = Math.max(0, STANDARD_SLOT_MINS - elapsed);
+    runningSlotMs = now.getTime() + (remaining * 60000);
+  }
+
+  runningSlotMs += (queueLength * STANDARD_SLOT_MINS * 60000);
+
   const availableSlots: string[] = [];
   for (let i = 0; i < 8; i++) {
-    const slotOffset = (bookedCount + i) * 15;
-    availableSlots.push(formatSlotTime(baseSlotDate, slotOffset));
+    const slotD = new Date(runningSlotMs + (i * STANDARD_SLOT_MINS * 60000));
+    availableSlots.push(slotD.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }));
   }
 
   return {

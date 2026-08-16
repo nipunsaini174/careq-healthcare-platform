@@ -51,6 +51,21 @@ router.get(
   requireRole('receptionist', 'admin'),
   receptionistController.getMyProfile,
 );
+router.get(
+  '/tracking',
+  authMiddleware,
+  receptionistController.trackToken,
+);
+router.get(
+  '/tracking/:tokenCode',
+  authMiddleware,
+  receptionistController.trackToken,
+);
+router.get(
+  '/active-tokens',
+  authMiddleware,
+  receptionistController.getActiveTokens,
+);
 router.patch(
   '/profile',
   authMiddleware,

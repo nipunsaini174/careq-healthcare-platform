@@ -46,6 +46,16 @@ export class AppointmentController {
       res.status(400).json({ error: err.message });
     }
   };
+
+  checkInAppointment = async (req: Request, res: Response) => {
+    try {
+      const { id } = req.params;
+      const result = await appointmentService.checkInAppointment(id as string);
+      res.status(200).json(result);
+    } catch (err: any) {
+      res.status(400).json({ error: err.message });
+    }
+  };
 }
 
 export const appointmentController = new AppointmentController();

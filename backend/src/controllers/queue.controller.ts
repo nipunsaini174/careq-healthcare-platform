@@ -7,7 +7,19 @@ export class QueueController {
   getDoctorQueue = async (req: Request, res: Response) => {
     try {
       const hospitalId = await resolveHospitalIdForUser(req);
-      const doctorId = req.query.doctorId ? Number(req.query.doctorId as string) : undefined;
+      let doctorId = req.query.doctorId ? Number(req.query.doctorId as string) : undefined;
+      if (!doctorId && (req as any).user) {
+        const user = (req as any).user;
+        const doc = await prisma.doctors.findFirst({
+          where: {
+            OR: [
+              { user_id: Number(user.userId) },
+              { doctor_id: Number(user.userId) },
+            ]
+          }
+        });
+        if (doc) doctorId = doc.doctor_id;
+      }
       const data = await queueService.getQueueForDoctor(hospitalId, doctorId);
       res.status(200).json(data);
     } catch (err: any) {
