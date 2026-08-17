@@ -7,10 +7,10 @@ WORKDIR /app
 RUN apk add --no-cache openssl
 
 # Install dependencies first for better caching
-COPY package*.json ./
+COPY package.json ./
 COPY src/prisma ./src/prisma
 
-RUN npm ci
+RUN npm install --no-audit
 
 # Generate Prisma Client
 RUN npx prisma generate --schema=src/prisma/schema.prisma
@@ -30,7 +30,7 @@ RUN apk add --no-cache openssl
 ENV NODE_ENV=production
 ENV PORT=5000
 
-COPY package*.json ./
+COPY package.json ./
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/src/prisma ./src/prisma
