@@ -1,0 +1,63 @@
+services:
+  # 1. Express Backend Service (Socket.io + Prisma + REST API)
+  - type: web
+    name: qflow-backend
+    runtime: docker
+    dockerfilePath: backend/Dockerfile
+    dockerContext: backend
+    plan: free
+    envVars:
+      - key: PORT
+        value: 5000
+      - key: DATABASE_URL
+        sync: false
+      - key: DIRECT_URL
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_PUBLISHABLE_KEY
+        sync: false
+      - key: SUPABASE_SECRET_KEY
+        sync: false
+      - key: CORS_ALLOWED_ORIGINS
+        sync: false
+
+  # 2. Hospital / Staff Dashboard (Next.js SSR)
+  - type: web
+    name: qflow-hospital-frontend
+    runtime: docker
+    dockerfilePath: hospital-frontend/Dockerfile
+    dockerContext: hospital-frontend
+    plan: free
+    envVars:
+      - key: PORT
+        value: 3000
+      - key: NEXT_PUBLIC_API_URL
+        fromService:
+          name: qflow-backend
+          type: web
+          property: url
+      - key: NEXT_PUBLIC_SUPABASE_URL
+        sync: false
+      - key: NEXT_PUBLIC_SUPABASE_ANON_KEY
+        sync: false
+
+  # 3. Patient Portal (Next.js PWA / Web App)
+  - type: web
+    name: qflow-patient-frontend
+    runtime: docker
+    dockerfilePath: patient-frontend/Dockerfile
+    dockerContext: patient-frontend
+    plan: free
+    envVars:
+      - key: NEXT_PUBLIC_API_URL
+        fromService:
+          name: qflow-backend
+          type: web
+          property: url
+      - key: NEXT_PUBLIC_SUPABASE_URL
+        sync: false
+      - key: NEXT_PUBLIC_SUPABASE_ANON_KEY
+        sync: false
