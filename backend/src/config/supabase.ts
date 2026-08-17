@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
+import WebSocket from 'ws';
 import dotenv from 'dotenv';
 dotenv.config();
 
@@ -11,12 +12,19 @@ if (!process.env.SUPABASE_URL || !process.env.SUPABASE_PUBLISHABLE_KEY || !proce
 }
 
 // Client for normal operations (e.g. signup, signin)
-export const supabase = createClient(supabaseUrl, supabasePublishableKey);
+export const supabase = createClient(supabaseUrl, supabasePublishableKey, {
+  realtime: {
+    transport: WebSocket as any,
+  },
+});
 
 // Admin Client for secure operations (e.g. inviting users)
 export const supabaseAdmin = createClient(supabaseUrl, supabaseSecretKey, {
   auth: {
     autoRefreshToken: false,
     persistSession: false
-  }
+  },
+  realtime: {
+    transport: WebSocket as any,
+  },
 });
