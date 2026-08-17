@@ -20,20 +20,6 @@ export default function EnterpriseCareContinuityView() {
   const [actionNotes, setActionNotes] = useState('');
   const [actionSubmitting, setActionSubmitting] = useState(false);
 
-  // Live Calculator State
-  const [showCalculator, setShowCalculator] = useState(false);
-  const [calcForm, setCalcForm] = useState({
-    diagnosis: 'Diabetes',
-    severity: 'Moderate',
-    testName: 'HbA1c',
-    testValue: 8.5,
-    testAbnormal: true,
-    medicationChanged: true,
-    previousMissedFollowup: true,
-  });
-  const [calcResult, setCalcResult] = useState(null);
-  const [calcLoading, setCalcLoading] = useState(false);
-
   const { socket } = useSocket();
 
   const fetchFollowupData = useCallback(async () => {
@@ -92,21 +78,6 @@ export default function EnterpriseCareContinuityView() {
     }
   };
 
-  const handleRunCalculator = async (e) => {
-    e.preventDefault();
-    try {
-      setCalcLoading(true);
-      const res = await api.post('/retention/predict-followup', calcForm);
-      if (res.data?.data) {
-        setCalcResult(res.data.data);
-      }
-    } catch (err) {
-      console.error('Prediction failed:', err);
-    } finally {
-      setCalcLoading(false);
-    }
-  };
-
   // Filter patients
   const filteredPatients = (data.patients || []).filter(p => {
     const matchesSearch = p.patientName?.toLowerCase().includes(search.toLowerCase()) ||
@@ -142,13 +113,6 @@ export default function EnterpriseCareContinuityView() {
 
           <div className="flex items-center gap-3">
             <button
-              onClick={() => setShowCalculator(!showCalculator)}
-              className="flex items-center gap-2 px-4 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-800 rounded-xl text-xs font-bold transition-all shadow-2xs"
-            >
-              <Activity size={15} className="text-teal-600" />
-              {showCalculator ? 'Hide AI Predictor' : 'Live Risk Predictor'}
-            </button>
-            <button
               onClick={fetchFollowupData}
               disabled={loading}
               className="flex items-center gap-2 px-4 py-2.5 bg-teal-600 hover:bg-teal-700 text-white rounded-xl text-xs font-bold transition-all shadow-xs disabled:opacity-50"
@@ -158,130 +122,6 @@ export default function EnterpriseCareContinuityView() {
             </button>
           </div>
         </div>
-
-        {/* Live Predictor Calculator Tool Modal/Collapse */}
-        {showCalculator && (
-          <div className="bg-gradient-to-br from-gray-900 to-slate-900 text-white p-6 rounded-2xl border border-gray-800 shadow-xl space-y-4 animate-in fade-in slide-in-from-top-2 duration-200">
-            <div className="flex justify-between items-center border-b border-gray-800 pb-3">
-              <div className="flex items-center gap-2">
-                <Sparkles size={18} className="text-teal-400" />
-                <h3 className="text-sm font-black tracking-wide text-white uppercase">Instant AI Follow-up Interval Predictor</h3>
-              </div>
-              <button onClick={() => setShowCalculator(false)} className="text-gray-400 hover:text-white">
-                <X size={18} />
-              </button>
-            </div>
-
-            <form onSubmit={handleRunCalculator} className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-6 gap-3 text-xs">
-              <div>
-                <label className="block text-gray-400 font-bold mb-1">Diagnosis</label>
-                <select 
-                  value={calcForm.diagnosis} 
-                  onChange={e => setCalcForm({...calcForm, diagnosis: e.target.value})}
-                  className="w-full bg-gray-800 border border-gray-700 rounded-lg p-2 text-white font-medium focus:border-teal-400 focus:outline-none"
-                >
-                  <option value="Diabetes">Diabetes</option>
-                  <option value="Hypertension">Hypertension</option>
-                  <option value="Migraine">Migraine</option>
-                  <option value="Asthma">Asthma</option>
-                  <option value="Thyroid Disorder">Thyroid Disorder</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-gray-400 font-bold mb-1">Severity</label>
-                <select 
-                  value={calcForm.severity} 
-                  onChange={e => setCalcForm({...calcForm, severity: e.target.value})}
-                  className="w-full bg-gray-800 border border-gray-700 rounded-lg p-2 text-white font-medium focus:border-teal-400 focus:outline-none"
-                >
-                  <option value="High">High</option>
-                  <option value="Moderate">Moderate</option>
-                  <option value="Low">Low</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-gray-400 font-bold mb-1">Test Name & Value</label>
-                <div className="flex gap-1">
-                  <input 
-                    type="text" 
-                    value={calcForm.testName} 
-                    onChange={e => setCalcForm({...calcForm, testName: e.target.value})}
-                    placeholder="Test"
-                    className="w-1/2 bg-gray-800 border border-gray-700 rounded-lg p-2 text-white font-medium focus:border-teal-400 focus:outline-none"
-                  />
-                  <input 
-                    type="number" 
-                    step="0.1"
-                    value={calcForm.testValue} 
-                    onChange={e => setCalcForm({...calcForm, testValue: parseFloat(e.target.value) || 0})}
-                    placeholder="Value"
-                    className="w-1/2 bg-gray-800 border border-gray-700 rounded-lg p-2 text-white font-medium focus:border-teal-400 focus:outline-none"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-gray-400 font-bold mb-1">Test Abnormal?</label>
-                <select 
-                  value={calcForm.testAbnormal ? 'yes' : 'no'} 
-                  onChange={e => setCalcForm({...calcForm, testAbnormal: e.target.value === 'yes'})}
-                  className="w-full bg-gray-800 border border-gray-700 rounded-lg p-2 text-white font-medium focus:border-teal-400 focus:outline-none"
-                >
-                  <option value="yes">Yes (Abnormal)</option>
-                  <option value="no">No (Normal)</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-gray-400 font-bold mb-1">Medication Changed?</label>
-                <select 
-                  value={calcForm.medicationChanged ? 'yes' : 'no'} 
-                  onChange={e => setCalcForm({...calcForm, medicationChanged: e.target.value === 'yes'})}
-                  className="w-full bg-gray-800 border border-gray-700 rounded-lg p-2 text-white font-medium focus:border-teal-400 focus:outline-none"
-                >
-                  <option value="yes">Yes</option>
-                  <option value="no">No</option>
-                </select>
-              </div>
-
-              <div className="flex items-end">
-                <button
-                  type="submit"
-                  disabled={calcLoading}
-                  className="w-full py-2 bg-teal-500 hover:bg-teal-400 text-gray-950 font-black rounded-lg transition-all shadow-md flex items-center justify-center gap-1.5"
-                >
-                  {calcLoading ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />}
-                  Predict
-                </button>
-              </div>
-            </form>
-
-            {calcResult && (
-              <div className="bg-gray-800/80 border border-teal-500/30 p-4 rounded-xl mt-3 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                <div className="space-y-1">
-                  <div className="flex items-center gap-3">
-                    <span className="text-lg font-black text-teal-400">
-                      Recommendation: {calcResult.recommendedFollowup.replace('_', ' ')}
-                    </span>
-                    <span className={`px-2.5 py-0.5 rounded text-[10px] font-black uppercase ${
-                      calcResult.priorityTier === 'CRITICAL' ? 'bg-red-500 text-white' :
-                      calcResult.priorityTier === 'HIGH' ? 'bg-amber-500 text-black' : 'bg-blue-500 text-white'
-                    }`}>
-                      {calcResult.priorityTier} PRIORITY ({calcResult.priorityScore}/100)
-                    </span>
-                  </div>
-                  <p className="text-xs text-gray-300 font-medium">{calcResult.clinicalReason}</p>
-                </div>
-                <div className="bg-teal-950/60 border border-teal-500/40 px-3.5 py-2 rounded-lg text-xs font-semibold text-teal-200">
-                  <span className="text-[10px] uppercase text-teal-400 block font-bold">Action Workflow</span>
-                  {calcResult.receptionistAction}
-                </div>
-              </div>
-            )}
-          </div>
-        )}
 
         {/* 4 KPI Overview Cards */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">

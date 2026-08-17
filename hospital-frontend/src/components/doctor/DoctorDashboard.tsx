@@ -37,6 +37,12 @@ import {
   Phone,
   Mail,
   ShieldAlert,
+  BrainCircuit,
+  Loader2,
+  ArrowRight,
+  Copy,
+  HeartPulse,
+  RefreshCw,
 } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { useRouter } from 'next/navigation';
@@ -69,7 +75,7 @@ export default function DashboardPage() {
   const [serverTotalPatientsToday, setServerTotalPatientsToday] = useState<number>(0);
 
   // App UI State
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'queue' | 'patients' | 'reports' | 'profile'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'queue' | 'patients' | 'predictor' | 'profile'>('dashboard');
   const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(false);
   const [loadingActivePatient, setLoadingActivePatient] = useState<boolean>(false);
 
@@ -85,6 +91,77 @@ export default function DashboardPage() {
 
   // Selected EMR patient details modal
   const [selectedEMRPatient, setSelectedEMRPatient] = useState<Patient | null>(null);
+
+  // AI Clinical Risk Predictor State
+  const [calcForm, setCalcForm] = useState({
+    diagnosis: 'Diabetes',
+    severity: 'Moderate',
+    chiefComplaint: '',
+    symptoms: '',
+    symptomsDuration: '3-7 days',
+    daysSinceLastVisit: 14 as number | null,
+    isFirstVisit: false,
+    testName: 'HbA1c',
+    testValue: 8.5,
+    testAbnormal: true,
+    medicationChanged: true,
+    previousMissedFollowup: true,
+  });
+  const [calcResult, setCalcResult] = useState<any>(null);
+  const [calcLoading, setCalcLoading] = useState<boolean>(false);
+  const [copiedPlan, setCopiedPlan] = useState<boolean>(false);
+
+  const handleRunDoctorPrediction = async (customPayload?: any) => {
+    try {
+      setCalcLoading(true);
+      const payload = customPayload || calcForm;
+      const res = await api.post('/retention/predict-followup', payload);
+      if (res.data?.data) {
+        setCalcResult(res.data.data);
+        return res.data.data;
+      }
+    } catch (err) {
+      console.error('Doctor follow-up prediction failed:', err);
+    } finally {
+      setCalcLoading(false);
+    }
+    return null;
+  };
+
+  const populatePredictorFromPatient = (p: Patient) => {
+    let inferredDiag = 'Diabetes';
+    const complaint = `${p.chiefComplaint || ''} ${p.reasonForVisit || ''} ${p.symptoms || ''}`.toLowerCase();
+    if (complaint.includes('hypertension') || complaint.includes('bp') || complaint.includes('pressure')) inferredDiag = 'Hypertension';
+    else if (complaint.includes('migraine') || complaint.includes('headache')) inferredDiag = 'Migraine';
+    else if (complaint.includes('asthma') || complaint.includes('breath') || complaint.includes('chest') || complaint.includes('cough')) inferredDiag = 'Asthma';
+    else if (complaint.includes('thyroid')) inferredDiag = 'Thyroid Disorder';
+    else if (complaint.includes('cardiac') || complaint.includes('heart') || complaint.includes('angina')) inferredDiag = 'Cardiac Condition';
+    else if (complaint.includes('diabetes') || complaint.includes('sugar')) inferredDiag = 'Diabetes';
+
+    const updated = {
+      diagnosis: inferredDiag,
+      severity: p.severity || (p.priority === 'HIGH' ? 'High' : 'Moderate'),
+      chiefComplaint: p.chiefComplaint || p.reasonForVisit || '',
+      symptoms: p.symptoms || '',
+      symptomsDuration: p.symptomsDuration || '3-7 days',
+      daysSinceLastVisit: p.daysSinceLastVisit ?? 14,
+      isFirstVisit: !!p.isFirstVisit,
+      testName: inferredDiag === 'Diabetes' ? 'HbA1c' : inferredDiag === 'Hypertension' ? 'Blood Pressure' : 'CBC / Vitals',
+      testValue: inferredDiag === 'Diabetes' ? 8.5 : inferredDiag === 'Hypertension' ? 145 : 12.0,
+      testAbnormal: p.priority === 'HIGH' || !!p.severity?.toLowerCase().includes('high'),
+      medicationChanged: true,
+      previousMissedFollowup: (p.daysSinceLastVisit || 0) > 30,
+    };
+    setCalcForm(updated);
+    handleRunDoctorPrediction(updated);
+  };
+
+  const applyRecommendationToNotes = () => {
+    if (!calcResult) return;
+    const recText = `\n[AI Follow-up Assessment]: Recommended interval ${calcResult.recommendedFollowup?.replace('_', ' ')} (${calcResult.priorityTier} Priority, Score ${calcResult.priorityScore}/100).\nClinical Rationale: ${calcResult.clinicalReason}\nDoctor Action: ${calcResult.doctorAlert || calcResult.receptionistAction}`;
+    setNotesInput(prev => prev ? `${prev}\n${recText}` : recText.trim());
+    alert('AI Follow-up assessment plan added to active consultation notes!');
+  };
 
   type ProfileFormData = {
     name: string;
@@ -559,6 +636,7 @@ export default function DashboardPage() {
             { id: 'dashboard', label: 'Dashboard', icon: ClipboardList },
             { id: 'queue', label: 'Live Queue', icon: Users, badge: waitingCount },
             { id: 'patients', label: 'Patient Records', icon: FileText },
+            { id: 'predictor', label: 'AI Risk Predictor', icon: BrainCircuit },
             { id: 'profile', label: 'My Profile', icon: User },
           ].map(item => {
             const Icon = item.icon;
@@ -824,23 +902,33 @@ export default function DashboardPage() {
                         </div>
 
                         {/* Footer button controls */}
-                        <div className="flex items-center justify-end gap-3 pt-1">
+                        <div className="flex flex-wrap items-center justify-end gap-3 pt-1">
+                          <button
+                            onClick={() => {
+                              populatePredictorFromPatient(activePatient);
+                              setActiveTab('predictor');
+                            }}
+                            className="flex items-center gap-1.5 bg-teal-50 dark:bg-teal-950/40 hover:bg-teal-100 dark:hover:bg-teal-900/50 text-teal-700 dark:text-teal-300 border border-teal-300 dark:border-teal-700/60 px-3.5 py-2 rounded-xl text-xs font-bold transition shadow-2xs cursor-pointer"
+                          >
+                            <BrainCircuit className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400" />
+                            AI Predict Follow-up
+                          </button>
                           <button
                             onClick={() => setSelectedEMRPatient(activePatient)}
-                            className="flex items-center gap-2 border border-border-color hover:bg-teal-50 dark:hover:bg-teal-950/30 px-3.5 py-2 rounded-xl text-xs font-semibold transition"
+                            className="flex items-center gap-2 border border-border-color hover:bg-teal-50 dark:hover:bg-teal-950/30 px-3.5 py-2 rounded-xl text-xs font-semibold transition cursor-pointer"
                           >
                             <FileText className="w-3.5 h-3.5" />
                             View EMR File
                           </button>
                           <button
                             onClick={handleSaveDraftNotes}
-                            className="border border-border-color hover:bg-bg-app px-3.5 py-2 rounded-xl text-xs font-semibold transition"
+                            className="border border-border-color hover:bg-bg-app px-3.5 py-2 rounded-xl text-xs font-semibold transition cursor-pointer"
                           >
                             Save Draft
                           </button>
                           <button
                             onClick={handleCompleteConsultation}
-                            className="flex items-center gap-2 bg-gradient-to-r from-teal-500 to-emerald-600 text-white hover:from-teal-600 hover:to-emerald-700 px-4 py-2 rounded-xl text-xs font-bold shadow-md shadow-teal-500/20 transition"
+                            className="flex items-center gap-2 bg-gradient-to-r from-teal-500 to-emerald-600 text-white hover:from-teal-600 hover:to-emerald-700 px-4 py-2 rounded-xl text-xs font-bold shadow-md shadow-teal-500/20 transition cursor-pointer"
                           >
                             <CheckCircle2 className="w-4 h-4" />
                             Complete Consultation & Checkout
@@ -1294,6 +1382,398 @@ export default function DashboardPage() {
                       </div>
                     </div>
                   ))}
+                </div>
+              </motion.div>
+            )}
+
+            {/* TAB: AI CLINICAL RISK & FOLLOW-UP PREDICTOR */}
+            {activeTab === 'predictor' && (
+              <motion.div
+                key="predictor"
+                initial={{ opacity: 0, y: 15 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -15 }}
+                transition={{ duration: 0.25 }}
+                className="flex flex-col gap-6"
+              >
+                {/* Header Banner */}
+                <div className="bg-bg-card border border-border-color rounded-2xl p-6 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
+                  <div className="flex items-center gap-4">
+                    <div className="w-14 h-14 rounded-2xl bg-teal-50 dark:bg-teal-500/10 border border-teal-200 dark:border-teal-800 flex items-center justify-center text-teal-600 dark:text-teal-400 shadow-2xs shrink-0">
+                      <BrainCircuit size={28} />
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <h2 className="text-xl font-black text-text-primary">AI Clinical Risk & Follow-up Predictor</h2>
+                        <span className="bg-teal-100 dark:bg-teal-950 text-teal-800 dark:text-teal-300 text-[10px] font-black px-2.5 py-0.5 rounded-full uppercase tracking-wider flex items-center gap-1 border border-teal-200 dark:border-teal-800">
+                          <Sparkles size={10} /> 500 Records Trained
+                        </span>
+                        <span className="bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 text-[10px] font-black px-2.5 py-0.5 rounded-full uppercase tracking-wider">
+                          Doctor Decision Support
+                        </span>
+                      </div>
+                      <p className="text-xs text-text-secondary font-medium mt-1">
+                        Predicts optimal follow-up timeline, clinical risk tier, and staff outreach urgency using longitudinal patient parameters.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => handleRunDoctorPrediction()}
+                      disabled={calcLoading}
+                      className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-teal-500 to-emerald-600 hover:from-teal-600 hover:to-emerald-700 text-white rounded-xl text-xs font-bold transition-all shadow-md shadow-teal-500/20 disabled:opacity-50 cursor-pointer"
+                    >
+                      {calcLoading ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />}
+                      Re-run Prediction
+                    </button>
+                  </div>
+                </div>
+
+                {/* Quick-Fill From Active Patient & Queue */}
+                <div className="bg-bg-card border border-border-color rounded-2xl p-4 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div className="flex items-center gap-2 text-xs font-bold text-text-secondary">
+                    <User className="w-4 h-4 text-teal-600 dark:text-teal-400" />
+                    <span>Quick-Fill from Live Patients:</span>
+                  </div>
+
+                  <div className="flex items-center gap-2 flex-wrap">
+                    {activePatient && (
+                      <button
+                        onClick={() => populatePredictorFromPatient(activePatient)}
+                        className="px-3 py-1.5 rounded-xl bg-teal-50 dark:bg-teal-950/50 border border-teal-200 dark:border-teal-800 text-teal-700 dark:text-teal-300 text-xs font-bold hover:bg-teal-100 dark:hover:bg-teal-900/60 transition flex items-center gap-1.5 cursor-pointer"
+                      >
+                        <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                        In-Consultation: {activePatient.name} ({activePatient.tokenCode || activePatient.id})
+                      </button>
+                    )}
+
+                    {waitingPatientsList.slice(0, 3).map((p) => (
+                      <button
+                        key={p.id}
+                        onClick={() => populatePredictorFromPatient(p)}
+                        className="px-2.5 py-1.5 rounded-xl bg-bg-app border border-border-color hover:border-teal-500 text-text-primary text-xs font-medium transition cursor-pointer"
+                      >
+                        {p.name} ({p.tokenCode || p.id})
+                      </button>
+                    ))}
+
+                    <button
+                      onClick={() => {
+                        const resetVal = {
+                          diagnosis: 'Diabetes',
+                          severity: 'Moderate',
+                          chiefComplaint: '',
+                          symptoms: '',
+                          symptomsDuration: '3-7 days',
+                          daysSinceLastVisit: 14,
+                          isFirstVisit: false,
+                          testName: 'HbA1c',
+                          testValue: 8.5,
+                          testAbnormal: true,
+                          medicationChanged: true,
+                          previousMissedFollowup: true,
+                        };
+                        setCalcForm(resetVal);
+                        handleRunDoctorPrediction(resetVal);
+                      }}
+                      className="px-2.5 py-1.5 rounded-xl border border-border-color text-text-secondary hover:text-text-primary text-xs font-medium transition cursor-pointer"
+                    >
+                      Reset Form
+                    </button>
+                  </div>
+                </div>
+
+                {/* 2-Column Prediction Workbench */}
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                  
+                  {/* Left Column: Form Controls (7 Cols) */}
+                  <div className="lg:col-span-7 bg-bg-card rounded-2xl border border-border-color p-6 shadow-xs flex flex-col gap-4">
+                    <div className="border-b border-border-color pb-3 flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Stethoscope className="w-4 h-4 text-teal-600 dark:text-teal-400" />
+                        <h3 className="font-bold text-sm">Clinical Diagnostic & Longitudinal Parameters</h3>
+                      </div>
+                      <span className="text-[11px] text-text-secondary">All fields feed the ML Decision Matrix</span>
+                    </div>
+
+                    <form
+                      onSubmit={(e) => {
+                        e.preventDefault();
+                        handleRunDoctorPrediction();
+                      }}
+                      className="space-y-4 text-xs"
+                    >
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                          <label className="block text-text-secondary font-bold mb-1">Primary Clinical Diagnosis</label>
+                          <select
+                            value={calcForm.diagnosis}
+                            onChange={(e) => setCalcForm({ ...calcForm, diagnosis: e.target.value })}
+                            className="w-full bg-bg-app border border-border-color rounded-xl p-2.5 text-xs font-semibold focus:outline-none focus:border-teal-500 cursor-pointer"
+                          >
+                            <option value="Diabetes">Diabetes Mellitus (Type 2 / Type 1)</option>
+                            <option value="Hypertension">Essential Hypertension</option>
+                            <option value="Migraine">Migraine & Chronic Headache</option>
+                            <option value="Asthma">Bronchial Asthma / COPD</option>
+                            <option value="Thyroid Disorder">Thyroid Disorder (Hypo/Hyper)</option>
+                            <option value="Cardiac Condition">Ischemic Heart Disease / Angina</option>
+                            <option value="Renal Disorder">Chronic Kidney Disease (CKD)</option>
+                            <option value="General Consultation">General Clinical / Post-Op</option>
+                          </select>
+                        </div>
+
+                        <div>
+                          <label className="block text-text-secondary font-bold mb-1">Clinical Severity Level</label>
+                          <select
+                            value={calcForm.severity}
+                            onChange={(e) => setCalcForm({ ...calcForm, severity: e.target.value })}
+                            className="w-full bg-bg-app border border-border-color rounded-xl p-2.5 text-xs font-semibold focus:outline-none focus:border-teal-500 cursor-pointer"
+                          >
+                            <option value="High">High / Severe Presentation</option>
+                            <option value="Moderate">Moderate Presentation</option>
+                            <option value="Low">Low / Mild Presentation</option>
+                          </select>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                          <label className="block text-text-secondary font-bold mb-1">Chief Complaint & Symptoms</label>
+                          <input
+                            type="text"
+                            value={calcForm.chiefComplaint}
+                            onChange={(e) => setCalcForm({ ...calcForm, chiefComplaint: e.target.value })}
+                            placeholder="e.g. Uncontrolled blood sugar, fatigue, polyuria"
+                            className="w-full bg-bg-app border border-border-color rounded-xl p-2.5 text-xs focus:outline-none focus:border-teal-500"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-text-secondary font-bold mb-1">Symptoms Duration</label>
+                          <select
+                            value={calcForm.symptomsDuration}
+                            onChange={(e) => setCalcForm({ ...calcForm, symptomsDuration: e.target.value })}
+                            className="w-full bg-bg-app border border-border-color rounded-xl p-2.5 text-xs font-semibold focus:outline-none focus:border-teal-500 cursor-pointer"
+                          >
+                            <option value="1-2 days">1-2 days (Acute onset)</option>
+                            <option value="3-7 days">3-7 days</option>
+                            <option value="1-2 weeks">1-2 weeks</option>
+                            <option value="More than 2 weeks">More than 2 weeks (Subacute / Chronic)</option>
+                          </select>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                          <label className="block text-text-secondary font-bold mb-1">Days Since Last Hospital Visit</label>
+                          <div className="flex gap-2">
+                            <input
+                              type="number"
+                              min="0"
+                              disabled={calcForm.isFirstVisit}
+                              value={calcForm.isFirstVisit ? 0 : (calcForm.daysSinceLastVisit ?? 0)}
+                              onChange={(e) => setCalcForm({ ...calcForm, daysSinceLastVisit: parseInt(e.target.value, 10) || 0 })}
+                              className="w-full bg-bg-app border border-border-color rounded-xl p-2.5 text-xs focus:outline-none focus:border-teal-500 disabled:opacity-50"
+                            />
+                            <label className="flex items-center gap-1.5 text-[11px] font-semibold text-text-secondary whitespace-nowrap cursor-pointer">
+                              <input
+                                type="checkbox"
+                                checked={calcForm.isFirstVisit}
+                                onChange={(e) => setCalcForm({ ...calcForm, isFirstVisit: e.target.checked })}
+                                className="rounded text-teal-600"
+                              />
+                              First Visit
+                            </label>
+                          </div>
+                        </div>
+
+                        <div>
+                          <label className="block text-text-secondary font-bold mb-1">Diagnostic Test & Lab Value</label>
+                          <div className="flex gap-2">
+                            <input
+                              type="text"
+                              value={calcForm.testName}
+                              onChange={(e) => setCalcForm({ ...calcForm, testName: e.target.value })}
+                              placeholder="Test (e.g. HbA1c)"
+                              className="w-1/2 bg-bg-app border border-border-color rounded-xl p-2.5 text-xs focus:outline-none focus:border-teal-500"
+                            />
+                            <input
+                              type="number"
+                              step="0.1"
+                              value={calcForm.testValue}
+                              onChange={(e) => setCalcForm({ ...calcForm, testValue: parseFloat(e.target.value) || 0 })}
+                              placeholder="Value"
+                              className="w-1/2 bg-bg-app border border-border-color rounded-xl p-2.5 text-xs focus:outline-none focus:border-teal-500"
+                            />
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        <div>
+                          <label className="block text-text-secondary font-bold mb-1">Lab Value Status</label>
+                          <select
+                            value={calcForm.testAbnormal ? 'yes' : 'no'}
+                            onChange={(e) => setCalcForm({ ...calcForm, testAbnormal: e.target.value === 'yes' })}
+                            className="w-full bg-bg-app border border-border-color rounded-xl p-2.5 text-xs font-semibold focus:outline-none focus:border-teal-500 cursor-pointer"
+                          >
+                            <option value="yes">Abnormal / Out of Range</option>
+                            <option value="no">Normal / Expected Range</option>
+                          </select>
+                        </div>
+
+                        <div>
+                          <label className="block text-text-secondary font-bold mb-1">Medication Changed?</label>
+                          <select
+                            value={calcForm.medicationChanged ? 'yes' : 'no'}
+                            onChange={(e) => setCalcForm({ ...calcForm, medicationChanged: e.target.value === 'yes' })}
+                            className="w-full bg-bg-app border border-border-color rounded-xl p-2.5 text-xs font-semibold focus:outline-none focus:border-teal-500 cursor-pointer"
+                          >
+                            <option value="yes">Yes (New Rx / Dose Adjusted)</option>
+                            <option value="no">No (Unchanged)</option>
+                          </select>
+                        </div>
+
+                        <div>
+                          <label className="block text-text-secondary font-bold mb-1">Prior Missed Follow-up?</label>
+                          <select
+                            value={calcForm.previousMissedFollowup ? 'yes' : 'no'}
+                            onChange={(e) => setCalcForm({ ...calcForm, previousMissedFollowup: e.target.value === 'yes' })}
+                            className="w-full bg-bg-app border border-border-color rounded-xl p-2.5 text-xs font-semibold focus:outline-none focus:border-teal-500 cursor-pointer"
+                          >
+                            <option value="yes">Yes (History of Non-adherence)</option>
+                            <option value="no">No (Compliant)</option>
+                          </select>
+                        </div>
+                      </div>
+
+                      <div className="pt-2 flex justify-end">
+                        <button
+                          type="submit"
+                          disabled={calcLoading}
+                          className="w-full sm:w-auto px-6 py-3 bg-gradient-to-r from-teal-500 to-emerald-600 hover:from-teal-600 hover:to-emerald-700 text-white font-bold rounded-xl text-xs transition-all shadow-md shadow-teal-500/20 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+                        >
+                          {calcLoading ? <Loader2 size={16} className="animate-spin" /> : <BrainCircuit size={16} />}
+                          Run AI Follow-up & Risk Prediction
+                        </button>
+                      </div>
+                    </form>
+                  </div>
+
+                  {/* Right Column: AI Intelligence & Recommendations (5 Cols) */}
+                  <div className="lg:col-span-5 flex flex-col gap-4">
+                    {calcResult ? (
+                      <div className="bg-bg-card rounded-2xl border border-teal-500/40 p-6 shadow-md flex flex-col gap-5 relative overflow-hidden">
+                        <div className="absolute top-0 right-0 w-32 h-32 bg-teal-500/10 rounded-full blur-2xl pointer-events-none" />
+
+                        {/* Top Status */}
+                        <div className="flex items-center justify-between border-b border-border-color pb-3">
+                          <span className="text-xs font-bold text-text-secondary uppercase tracking-wider flex items-center gap-1.5">
+                            <Sparkles className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400" />
+                            Model Prediction Result
+                          </span>
+                          <span className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${
+                            calcResult.priorityTier === 'CRITICAL'
+                              ? 'bg-red-500 text-white animate-pulse'
+                              : calcResult.priorityTier === 'HIGH'
+                              ? 'bg-amber-500 text-black'
+                              : calcResult.priorityTier === 'MEDIUM'
+                              ? 'bg-blue-500 text-white'
+                              : 'bg-emerald-500 text-white'
+                          }`}>
+                            {calcResult.priorityTier} RISK ({calcResult.priorityScore}/100)
+                          </span>
+                        </div>
+
+                        {/* Big Recommendation Card */}
+                        <div className="p-4 rounded-xl bg-teal-50/70 dark:bg-teal-950/40 border border-teal-200 dark:border-teal-800 flex items-center justify-between">
+                          <div>
+                            <span className="text-[10px] font-bold uppercase text-teal-800 dark:text-teal-400 block tracking-wider">
+                              Recommended Follow-up Window
+                            </span>
+                            <h3 className="text-2xl font-black text-teal-900 dark:text-teal-200 mt-0.5">
+                              {calcResult.recommendedFollowup?.replace('_', ' ') || '7 DAYS'}
+                            </h3>
+                            <p className="text-[11px] text-teal-700 dark:text-teal-300 mt-0.5">
+                              Target clinical re-evaluation in ~{calcResult.recommendedDays || 7} days
+                            </p>
+                          </div>
+                          <div className="w-12 h-12 rounded-2xl bg-teal-600 text-white flex items-center justify-center font-bold text-sm shadow-sm">
+                            {calcResult.recommendedDays || 7}d
+                          </div>
+                        </div>
+
+                        {/* Clinical Rationale */}
+                        <div className="space-y-1.5">
+                          <span className="text-[10px] font-bold uppercase text-text-secondary tracking-wider block">
+                            Clinical Rationale & Evidence
+                          </span>
+                          <div className="bg-bg-app border border-border-color rounded-xl p-3.5 text-xs font-medium text-text-primary leading-relaxed">
+                            {calcResult.clinicalReason}
+                          </div>
+                        </div>
+
+                        {/* Doctor Next Step & Action Workflow */}
+                        <div className="grid grid-cols-1 gap-2.5 text-xs">
+                          {calcResult.doctorAlert && (
+                            <div className="bg-amber-500/10 border border-amber-500/30 rounded-xl p-3 text-amber-800 dark:text-amber-200">
+                              <span className="text-[10px] uppercase font-bold text-amber-700 dark:text-amber-400 block mb-0.5">Doctor Action</span>
+                              <p className="font-semibold">{calcResult.doctorAlert}</p>
+                            </div>
+                          )}
+
+                          <div className="bg-bg-app border border-border-color rounded-xl p-3 text-text-secondary">
+                            <span className="text-[10px] uppercase font-bold text-teal-600 dark:text-teal-400 block mb-0.5">Receptionist / Outreach Action</span>
+                            <p className="font-medium text-text-primary">{calcResult.receptionistAction}</p>
+                          </div>
+                        </div>
+
+                        {/* Action Buttons */}
+                        <div className="flex flex-col gap-2 pt-2 border-t border-border-color">
+                          <button
+                            onClick={applyRecommendationToNotes}
+                            className="w-full py-2.5 bg-gradient-to-r from-teal-500 to-emerald-600 hover:from-teal-600 hover:to-emerald-700 text-white rounded-xl text-xs font-bold transition shadow-xs flex items-center justify-center gap-2 cursor-pointer"
+                          >
+                            <FileText size={14} />
+                            Apply to Active Consultation Notes
+                          </button>
+
+                          <button
+                            onClick={() => {
+                              const planText = `Patient Clinical AI Recommendation:\n- Follow-up: ${calcResult.recommendedFollowup?.replace('_', ' ')}\n- Priority: ${calcResult.priorityTier} (${calcResult.priorityScore}/100)\n- Clinical Reason: ${calcResult.clinicalReason}\n- Protocol: ${calcResult.receptionistAction}`;
+                              navigator.clipboard?.writeText(planText);
+                              setCopiedPlan(true);
+                              setTimeout(() => setCopiedPlan(false), 2000);
+                            }}
+                            className="w-full py-2 bg-bg-app hover:bg-border-color/30 border border-border-color rounded-xl text-xs font-semibold transition flex items-center justify-center gap-1.5 cursor-pointer text-text-secondary hover:text-text-primary"
+                          >
+                            {copiedPlan ? <Check size={14} className="text-emerald-500" /> : <Copy size={14} />}
+                            {copiedPlan ? 'Copied to Clipboard!' : 'Copy Assessment Summary'}
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="bg-bg-card rounded-2xl border border-border-color p-8 shadow-xs flex flex-col items-center justify-center text-center gap-3">
+                        <div className="w-12 h-12 rounded-full bg-teal-50 dark:bg-teal-950/50 text-teal-600 dark:text-teal-400 flex items-center justify-center">
+                          <BrainCircuit size={24} />
+                        </div>
+                        <h4 className="font-bold text-sm">Ready to Predict</h4>
+                        <p className="text-xs text-text-secondary max-w-xs">
+                          Fill in the clinical parameters on the left or select a live queue patient to calculate recommended follow-up interval and risk score.
+                        </p>
+                        <button
+                          onClick={() => handleRunDoctorPrediction()}
+                          disabled={calcLoading}
+                          className="mt-2 px-5 py-2 rounded-xl bg-teal-500 hover:bg-teal-600 text-white font-bold text-xs transition cursor-pointer flex items-center gap-1.5"
+                        >
+                          {calcLoading ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />}
+                          Run Sample Prediction
+                        </button>
+                      </div>
+                    )}
+                  </div>
+
                 </div>
               </motion.div>
             )}
