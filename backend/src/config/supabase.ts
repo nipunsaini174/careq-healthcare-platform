@@ -2,11 +2,11 @@ import { createClient } from '@supabase/supabase-js';
 import dotenv from 'dotenv';
 dotenv.config();
 
-const supabaseUrl = process.env.SUPABASE_URL || '';
-const supabasePublishableKey = process.env.SUPABASE_PUBLISHABLE_KEY || '';
-const supabaseSecretKey = process.env.SUPABASE_SECRET_KEY || '';
+const supabaseUrl = process.env.SUPABASE_URL || 'https://placeholder.supabase.co';
+const supabasePublishableKey = process.env.SUPABASE_PUBLISHABLE_KEY || 'placeholder-publishable-key';
+const supabaseSecretKey = process.env.SUPABASE_SECRET_KEY || 'placeholder-secret-key';
 
-if (!supabaseUrl || !supabasePublishableKey || !supabaseSecretKey) {
+if (!process.env.SUPABASE_URL || !process.env.SUPABASE_PUBLISHABLE_KEY || !process.env.SUPABASE_SECRET_KEY) {
   console.warn("WARNING: Missing Supabase environment variables! Supabase Auth will fail.");
 }
 

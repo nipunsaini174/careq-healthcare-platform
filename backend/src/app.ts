@@ -46,6 +46,10 @@ const corsOptions: CorsOptions = {
     // Allow those — auth is enforced by JWT middleware downstream.
     if (!origin) return callback(null, true);
     if (ALLOWED_ORIGINS.includes(origin)) return callback(null, true);
+    // Allow any onrender.com deployed frontend
+    if (origin.endsWith('.onrender.com')) {
+      return callback(null, true);
+    }
     // Allow any LAN/localhost dev origin: accommodates testing on
     // another device (phone on the same Wi-Fi) without code changes.
     if (/^http:\/\/(localhost|127\.0\.0\.1|192\.168\.\d{1,3}\.\d{1,3}|10\.\d{1,3}\.\d{1,3}\.\d{1,3}):\d+$/i.test(origin)) {

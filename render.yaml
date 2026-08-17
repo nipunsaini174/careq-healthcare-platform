@@ -41,7 +41,7 @@ services:
       - key: NEXT_PUBLIC_SUPABASE_ANON_KEY
         sync: false
 
-  # 3. Patient Portal (Next.js PWA / Web App)
+  # 3. Patient Portal (Next.js App)
   - type: web
     name: qflow-patient-frontend
     runtime: docker
@@ -49,6 +49,8 @@ services:
     dockerContext: patient-frontend
     plan: free
     envVars:
+      - key: PORT
+        value: 3000
       - key: NEXT_PUBLIC_API_URL
         sync: false
       - key: NEXT_PUBLIC_SUPABASE_URL
